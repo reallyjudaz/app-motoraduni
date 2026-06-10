@@ -6,30 +6,50 @@ from google.oauth2 import service_account
 st.set_page_config(page_title="Bikers Bot App", page_icon="🚴", layout="centered")
 st.title("🚴 Bikers Bot - Pannello di Controllo")
 
-# 2. Funzione ottimizzata per connettersi a Google Sheets usando i Secrets
+# 2. Funzione ottimizzata e auto-riparante per connettersi a Google Sheets usando i Secrets
 @st.cache_resource
 def inizializza_connessione_google():
     try:
-        # Recupera il blocco [gcp_service_account] salvato su Streamlit Cloud
-        credentials_info = st.secrets["gcp_service_account"]
+        # Trasforma i secrets in un dizionario modificabile in Python
+        credentials_info = dict(st.secrets["gcp_service_account"])
         
-        # Definisce i permessi (scopes) per Sheets e Drive
+        # SANIFICAZIONE DELLA CHIAVE (Risolve l'errore ASN.1 / Could not deserialize key data)
+        raw_key = credentials_info["private_key"]
+        
+        # Rimuove spazi vuoti e tabulazioni invisibili all'inizio e alla fine di ogni riga
+        lines = [line.strip() for line in raw_key.split('\n') if line.strip()]
+        
+        # Ricostruisce la chiave con gli "a capo" puliti ed esatti richiesti da Google
+        cleaned_key = "\n".join(lines)
+        
+        # Gestisce i casi in cui ci siano caratteri "\n" scritti come testo letterale
+        cleaned_key = cleaned_key.replace("\\n", "\n")
+        
+        # Se manca il carattere di a capo finale fondamentale, lo aggiunge
+        if not cleaned_key.endswith("\n"):
+            cleaned_key += "\n"
+            
+        # Sovrascrive la chiave corretta nel dizionario
+        credentials_info["private_key"] = cleaned_key
+        
+        # Configura i permessi per Google Sheets e Drive
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
         
-        # Genera le credenziali sicure
+        # Genera le credenziali sicure con la chiave appena riparata
         credentials = service_account.Credentials.from_service_account_info(credentials_info, scopes=scopes)
         
         # Autorizza e restituisce il client gspread
         return gspread.authorize(credentials)
+        
     except Exception as e:
-        st.error("Errore critico nella lettura dei Secrets di Streamlit. Verifica la sintassi TOML.")
+        st.error("Errore critico durante la sanificazione o la lettura delle credenziali Google.")
         st.exception(e)
         return None
 
-# 3. Avvia la connessione
+# 3. Avvia la connessione automatica
 gc = inizializza_connessione_google()
 
 if gc is not None:
@@ -38,7 +58,7 @@ if gc is not None:
     # =========================================================================
     # ⚠️ DA MODIFICARE: Inserisci qui sotto il nome ESATTO del tuo Foglio Google
     # =========================================================================
-    NOME_DEL_FOGLIO = "app motoraduni" 
+    NOME_DEL_FOGLIO = "Il_Nome_Del_Tuo_Foglio_Qui" 
     
     try:
         # Apre il file di Google Sheets usando il nome
@@ -58,7 +78,7 @@ if gc is not None:
         else:
             st.info("Il foglio è connesso, ma sembra essere vuoto o privo di intestazioni nella prima riga.")
             
-        # --- Esempio opzionale: Un form per aggiungere dati al foglio ---
+        # --- Form per aggiungere dati al foglio (Esempio) ---
         st.divider()
         st.subheader("Aggiungi una nuova riga nel foglio")
         with st.form("nuovo_inserimento"):
@@ -73,7 +93,7 @@ if gc is not None:
                 
     except gspread.exceptions.SpreadsheetNotFound:
         st.error(f"Impossibile trovare il foglio chiamato '{NOME_DEL_FOGLIO}'.")
-        st.info("Assicurati di aver digitato il nome maiuscole/minuscole comprese e di aver completato l'Ultimo Passo qui sotto 👇")
+        st.info("Assicurati di aver digitato il nome maiuscole/minuscole comprese e di aver condiviso il foglio Google con l'email del bot.")
     except Exception as e:
         st.error("Si è verificato un errore durante la lettura dei dati:")
         st.exception(e)
