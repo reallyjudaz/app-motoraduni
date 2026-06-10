@@ -1,52 +1,79 @@
 import streamlit as st
-import pandas as pd
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2 import service_account
 
-st.set_page_config(page_title="Iron & Rubber Route", layout="wide")
+# 1. Configurazione iniziale della pagina Streamlit
+st.set_page_config(page_title="Bikers Bot App", page_icon="🚴", layout="centered")
+st.title("🚴 Bikers Bot - Pannello di Controllo")
 
-# --- CONNESSIONE GOOGLE SHEETS ---
+# 2. Funzione ottimizzata per connettersi a Google Sheets usando i Secrets
 @st.cache_resource
-def get_sheet():
-    creds_dict = st.secrets["gcp_service_account"]
-    scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/drive']
-    # Correzione del metodo di autenticazione
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
-    # INSERISCI QUI IL NOME ESATTO DEL TUO FOGLIO GOOGLE
-    return client.open("app motoraduni").sheet1
-
-# Inizializza la connessione
-try:
-    sheet = get_sheet()
-except Exception as e:
-    st.error(f"Errore di connessione a Google Sheets: {e}")
-    st.stop()
-
-def carica_dati():
-    data = sheet.get_all_records()
-    df = pd.DataFrame(data)
-    colonne = ["Data", "Regione", "Nome Evento / Raduno", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"]
-    for col in colonne:
-        if col not in df.columns: df[col] = ""
-    df["Partecipanti"] = pd.to_numeric(df["Partecipanti"], errors='coerce').fillna(0).astype(int)
-    return df
-
-# --- INTERFACCIA ---
-st.markdown("<h1 style='text-align: center; color: #ff9100;'>Iron & Rubber Route</h1>", unsafe_allow_html=True)
-
-df = carica_dati()
-
-# Visualizzazione eventi
-for index, riga in df.iterrows():
-    with st.container(border=True):
-        st.write(f"### {riga['Nome Evento / Raduno']}")
-        st.write(f"Data: {riga['Data']} | Luogo: {riga['Luogo']}")
+def inizializza_connessione_google():
+    try:
+        # Recupera il blocco [gcp_service_account] salvato su Streamlit Cloud
+        credentials_info = st.secrets["gcp_service_account"]
         
-        if st.button(f"👍 Partecipo a {riga['Nome Evento / Raduno']}", key=f"btn_{index}"):
-            nuovo_valore = int(riga['Partecipanti']) + 1
-            # Aggiorna su Google Sheets (+2 per compensare header e indice 0)
-            sheet.update_cell(index + 2, df.columns.get_loc("Partecipanti") + 1, nuovo_valore)
-            st.rerun()
+        # Definisce i permessi (scopes) per Sheets e Drive
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
         
-        st.write(f"🔥 Partecipanti attuali: {riga['Partecipanti']}")
+        # Genera le credenziali sicure
+        credentials = service_account.Credentials.from_service_account_info(credentials_info, scopes=scopes)
+        
+        # Autorizza e restituisce il client gspread
+        return gspread.authorize(credentials)
+    except Exception as e:
+        st.error("Errore critico nella lettura dei Secrets di Streamlit. Verifica la sintassi TOML.")
+        st.exception(e)
+        return None
+
+# 3. Avvia la connessione
+gc = inizializza_connessione_google()
+
+if gc is not None:
+    st.success("⚡ Connessione a Google Cloud stabilita correttamente!")
+    
+    # =========================================================================
+    # ⚠️ DA MODIFICARE: Inserisci qui sotto il nome ESATTO del tuo Foglio Google
+    # =========================================================================
+    NOME_DEL_FOGLIO = "Il_Nome_Del_Tuo_Foglio_Qui" 
+    
+    try:
+        # Apre il file di Google Sheets usando il nome
+        foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
+        
+        # Seleziona la prima scheda (Tab) del foglio
+        scheda = foglio_di_calcolo.get_worksheet(0)
+        
+        st.subheader(f"Dati attuali nel foglio: *{NOME_DEL_FOGLIO}*")
+        
+        # Legge tutti i dati all'interno del foglio e li trasforma in una lista di dizionari
+        dati = scheda.get_all_records()
+        
+        if dati:
+            # Mostra i dati in una bellissima tabella interattiva su Streamlit
+            st.dataframe(dati, use_container_width=True)
+        else:
+            st.info("Il foglio è connesso, ma sembra essere vuoto o privo di intestazioni nella prima riga.")
+            
+        # --- Esempio opzionale: Un form per aggiungere dati al foglio ---
+        st.divider()
+        st.subheader("Aggiungi una nuova riga nel foglio")
+        with st.form("nuovo_inserimento"):
+            campo_1 = st.text_input("Dato 1")
+            campo_2 = st.text_input("Dato 2")
+            submit = st.form_submit_button("Invia dati a Google Sheets")
+            
+            if submit:
+                # Aggiunge i dati inseriti nel form in fondo al foglio Google
+                scheda.append_row([campo_1, campo_2])
+                st.success("Riga aggiunta con successo! Aggiorna la pagina per vederla.")
+                
+    except gspread.exceptions.SpreadsheetNotFound:
+        st.error(f"Impossibile trovare il foglio chiamato '{NOME_DEL_FOGLIO}'.")
+        st.info("Assicurati di aver digitato il nome maiuscole/minuscole comprese e di aver completato l'Ultimo Passo qui sotto 👇")
+    except Exception as e:
+        st.error("Si è verificato un errore durante la lettura dei dati:")
+        st.exception(e)
