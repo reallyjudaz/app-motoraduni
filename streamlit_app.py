@@ -38,7 +38,7 @@ if gc is not None:
     # =========================================================================
     # ⚠️ DA MODIFICARE: Inserisci qui sotto il nome ESATTO del tuo Foglio Google
     # =========================================================================
-    NOME_DEL_FOGLIO = "Il_Nome_Del_Tuo_Foglio_Qui" 
+    NOME_DEL_FOGLIO = "app motoraduni" 
     
     try:
         # Apre il file di Google Sheets usando il nome
