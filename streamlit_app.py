@@ -38,7 +38,7 @@ if gc is not None:
     # =========================================================================
     # ⚠️ CAMBIA SOLO QUESTA RIGA: Inserisci il nome ESATTO del tuo Foglio Google
     # =========================================================================
-    NOME_DEL_FOGLIO = "Il_Nome_Del_Tuo_Foglio_Qui" 
+    NOME_DEL_FOGLIO = "app motoraduni" 
     
     try:
         # Apertura del database su Google Sheets
