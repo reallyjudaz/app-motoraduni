@@ -76,14 +76,18 @@ else:
         foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
         scheda = foglio_di_calcolo.get_worksheet(0)
         
-        # AUTO-GUARIGIONE: Forza le intestazioni corrette nella riga 1 del foglio Google
         colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"]
-        scheda.update(range_name='A1:F1', values=[colonne_esatte])
         
-        # Recupero dei record correnti
-        dati = scheda.get_all_records()
-        if dati:
-            df = pd.DataFrame(dati)
+        # METODO ULTRA-SICURO: Leggiamo i valori grezzi ignorando i blocchi sui duplicati
+        tutti_i_dati = scheda.get_all_values()
+        
+        if tutti_i_dati and len(tutti_i_dati) > 1:
+            righe_pulite = []
+            # Saltiamo la prima riga (i vecchi titoli potenzialmente duplicati) e isoliamo solo le colonne A-F
+            for riga in tutti_i_dati[1:]:
+                riga_6 = (riga + [""] * 6)[:6]  # Forza la riga ad avere esattamente 6 elementi
+                righe_pulite.append(riga_6)
+            df = pd.DataFrame(righe_pulite, columns=colonne_esatte)
         else:
             df = pd.DataFrame(columns=colonne_esatte)
 
@@ -102,13 +106,13 @@ else:
                     if f:
                         with open(path, "wb") as file: file.write(f.getbuffer())
                     
-                    # Salva su Google Sheets rispettando l'ordine delle colonne corrette
+                    # Salva su Google Sheets rispettando l'ordine
                     scheda.append_row([n, d, l, i, path, 0])
                     st.rerun()
 
         # --- LISTA EVENTI ORDINATA ---
         if not df.empty:
-            # Crea un indice di backup basato sulla posizione reale nel foglio Google (+2 perché Sheets parte da 1 e la riga 1 ha i titoli)
+            # Crea un indice di backup basato sulla posizione reale nel foglio Google (+2 perché Sheets parte da 1 e riga 1 ha i titoli)
             df['GSheet_Row'] = df.index + 2
             
             # Conversione Data per ordinamento cronologico
@@ -120,8 +124,6 @@ else:
 
             for idx, row in df.iterrows():
                 riga_foglio_google = int(row['GSheet_Row'])
-                
-                # Creiamo una chiave unica per il voto basata su Nome e Data (stabile e sicura)
                 chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                 
                 # Apertura Blocco Rettangolo Evento (Expander)
