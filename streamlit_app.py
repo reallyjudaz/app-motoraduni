@@ -24,7 +24,7 @@ def inizializza_connessione_google():
         return None
 
 gc = inizializza_connessione_google()
-NOME_DEL_FOGLIO = "app motoraduni"  # Nome del tuo foglio Google impostato in precedenza
+NOME_DEL_FOGLIO = "app motoraduni"  # Nome del tuo foglio Google
 
 # --- 3. FUNZIONI DATI (Voti Locali sul Telefono) ---
 def registra_voto(id_evento):
@@ -60,7 +60,7 @@ label, .stTextInput label, .stTextArea label, .stFileUploader label { color: whi
 </style>
 """, unsafe_allow_html=True)
 
-# --- 5. HEADER ---
+# --- 5. HEADER (Logo) ---
 if os.path.exists("logo_custom.png"):
     st.image("logo_custom.png", use_container_width=True)
 
@@ -98,7 +98,7 @@ else:
                     if f:
                         with open(path, "wb") as file: file.write(f.getbuffer())
                     
-                    # Salva direttamente inserendo una riga su Google Sheets
+                    # Salva su Google Sheets
                     scheda.append_row([n, d, l, i, path, 0])
                     st.rerun()
 
@@ -117,6 +117,7 @@ else:
             for idx, row in df.iterrows():
                 riga_foglio_google = int(row['GSheet_Row'])
                 
+                # Apertura Blocco Rettangolo Evento (Expander)
                 with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                     st.write(f"📍 **Luogo:** {row['Luogo']}")
                     st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
@@ -130,21 +131,22 @@ else:
                     if pwd == "Judaz2026":
                         new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
                         if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                            # Colonna 4 su Google Sheets corrisponde a "Dettagli / Note"
                             scheda.update_cell(riga_foglio_google, 4, new_info)
                             st.rerun()
 
-                    # Bottone Partecipa con contatore reale
-                    conteggio = int(row['Partecipanti'])
-                    label = f"CI VADO 🔥 {conteggio}"
-                    if ha_gia_votato(idx):
-                        st.button(label, key=f"btn_{idx}", disabled=True)
-                    else:
-                        if st.button(label, key=f"btn_{idx}"):
-                            # Colonna 6 su Google Sheets corrisponde a "Partecipanti"
-                            scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
-                            registra_voto(idx)
-                            st.rerun()
+                # --- POSIZIONATO ESATTAMENTE SOTTO L'EVENTO (FUORI DAL RETTANGOLO) ---
+                conteggio = int(row['Partecipanti'])
+                label = f"CI VADO 🔥 {conteggio}"
+                if ha_gia_votato(idx):
+                    st.button(label, key=f"btn_{idx}", disabled=True)
+                else:
+                    if st.button(label, key=f"btn_{idx}"):
+                        scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
+                        registra_voto(idx)
+                        st.rerun()
+                
+                # Spazio vuoto distanziatore tra un evento e l'altro
+                st.markdown("<br>", unsafe_allow_html=True)
         else:
             st.info("Il database su Google Sheets è vuoto. Aggiungi il tuo primo evento!")
 
