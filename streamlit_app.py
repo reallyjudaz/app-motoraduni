@@ -78,14 +78,13 @@ else:
         
         colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"]
         
-        # METODO ULTRA-SICURO: Leggiamo i valori grezzi ignorando i blocchi sui duplicati
+        # Lettura dei valori grezzi dal foglio
         tutti_i_dati = scheda.get_all_values()
         
         if tutti_i_dati and len(tutti_i_dati) > 1:
             righe_pulite = []
-            # Saltiamo la prima riga (i vecchi titoli potenzialmente duplicati) e isoliamo solo le colonne A-F
             for riga in tutti_i_dati[1:]:
-                riga_6 = (riga + [""] * 6)[:6]  # Forza la riga ad avere esattamente 6 elementi
+                riga_6 = (riga + [""] * 6)[:6]  # Forza a 6 elementi per sicurezza
                 righe_pulite.append(riga_6)
             df = pd.DataFrame(righe_pulite, columns=colonne_esatte)
         else:
@@ -95,7 +94,7 @@ else:
         with st.expander("➕ AGGIUNGI EVENTO"):
             with st.form("add_form", clear_on_submit=True):
                 n = st.text_input("Nome Evento")
-                d = st.text_input("Data (es: 2026-12-31)")
+                d = st.text_input("Data (es: 31/12/2026)")
                 l = st.text_input("Luogo")
                 i = st.text_area("Info")
                 f = st.file_uploader("Locandina", type=['jpg', 'png'])
@@ -106,18 +105,20 @@ else:
                     if f:
                         with open(path, "wb") as file: file.write(f.getbuffer())
                     
-                    # Salva su Google Sheets rispettando l'ordine
+                    # Salva nel foglio
                     scheda.append_row([n, d, l, i, path, 0])
                     st.rerun()
 
         # --- LISTA EVENTI ORDINATA ---
         if not df.empty:
-            # Crea un indice di backup basato sulla posizione reale nel foglio Google (+2 perché Sheets parte da 1 e riga 1 ha i titoli)
+            # Crea un indice basato sulla posizione REALE del foglio (+2 per via di intestazione e indice che parte da 1)
             df['GSheet_Row'] = df.index + 2
             
-            # Conversione Data per ordinamento cronologico
-            df['Data_Date'] = pd.to_datetime(df['Data'], errors='coerce')
-            df = df.sort_values(by='Data_Date', ascending=True)
+            # FIX DELLE DATE: dayfirst=True forza Python a interpretare il formato italiano GG/MM/AAAA
+            df['Data_Date'] = pd.to_datetime(df['Data'].astype(str).str.strip(), dayfirst=True, errors='coerce')
+            
+            # Ordina cronologicamente. Se ci sono date scritte male (NaT), finiscono in fondo (na_position='last')
+            df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             
             # Forza partecipanti a numero intero
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
