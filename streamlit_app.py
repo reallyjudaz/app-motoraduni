@@ -59,7 +59,7 @@ def parsing_data_biker(testo_data):
     try: return pd.Timestamp(year=anno, month=mese_num, day=giorno)
     except: return pd.NaT
 
-# --- 4. CSS INTEGRATO ---
+# --- 4. CSS INTEGRATO E COLORI ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
@@ -75,11 +75,18 @@ st.markdown("""
 .stExpander { background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }
 .streamlit-expanderHeader { color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }
 
-div[data-testid="stButton"] button { 
-    background-color: #ff9100 !important; color: black !important; font-weight: bold !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; width: 100%;
+/* Forza il testo NERO sui bottoni arancioni e sul tasto SALVA */
+div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { 
+    background-color: #ff9100 !important; 
+    color: black !important; 
+    font-weight: bold !important; 
+    font-family: 'Special Elite', cursive !important; 
+    border-radius: 5px !important; 
+    height: 38px !important; 
+    width: 100%;
 }
 
-label, .stTextInput label, .stTextArea label, .stFileUploader label { color: white !important; }
+label, .stTextInput label, .stTextArea label { color: white !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -107,26 +114,19 @@ else:
         else:
             df = pd.DataFrame(columns=colonne_esatte)
 
-        # --- FORM AGGIUNGI EVENTO ---
+        # --- FORM AGGIUNGI EVENTO MODIFICATO ---
         with st.expander("➕ AGGIUNGI EVENTO"):
             with st.form("add_form", clear_on_submit=True):
                 n = st.text_input("Nome Evento")
                 d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
                 l = st.text_input("Luogo")
                 i = st.text_area("Info")
-                url_inserito = st.text_input("Link della Locandina (URL internet - Consigliato)")
-                f = st.file_uploader("Oppure carica file dal dispositivo (Temporaneo)", type=['jpg', 'png'])
+                
+                # Sostituito del tutto l'upload con l'inserimento del Link chiaro
+                url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
              
                 if st.form_submit_button("SALVA"):
-                    path_finale = ""
-                    if url_inserito.strip():
-                        path_finale = url_inserito.strip()
-                    elif f:
-                        if not os.path.exists("locandine"): os.makedirs("locandine")
-                        path_locale = os.path.join("locandine", f.name)
-                        with open(path_locale, "wb") as file: file.write(f.getbuffer())
-                        path_finale = path_locale
-                    
+                    path_finale = url_inserito.strip()
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
@@ -152,14 +152,13 @@ else:
                         elif os.path.exists(img_path):
                             st.image(img_path, use_container_width=True)
                     
-                    # --- PANNELLO MODIFICA POTENZIATO ---
+                    # --- PANNELLO MODIFICA ---
                     pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                     if pwd == "Judaz2026":
                         new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
-                        new_img = st.text_input(f"Modifica Link Locandina URL {idx}", value=img_path, key=f"img_{idx}")
+                        new_img = st.text_input(f"Modifica Link Locandina (es. da Postimages) {idx}", value=img_path, key=f"img_{idx}")
                         
                         if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                            # Aggiorna colonna 4 (Info) e colonna 5 (Locandina) su Google Sheets
                             scheda.update_cell(riga_foglio_google, 4, new_info)
                             scheda.update_cell(riga_foglio_google, 5, new_img)
                             st.rerun()
