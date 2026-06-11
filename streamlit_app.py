@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import re
 import gspread
 from google.oauth2 import service_account
 
@@ -26,7 +27,7 @@ def inizializza_connessione_google():
 gc = inizializza_connessione_google()
 NOME_DEL_FOGLIO = "app motoraduni"  # Nome del tuo foglio Google
 
-# --- 3. FUNZIONI DATI (Voti Locali sul Telefono) ---
+# --- 3. FUNZIONI DATI (Voti Locali sul Telefono e Parsing Date) ---
 def registra_voto(chiave_evento):
     with open("voti_fatti.txt", "a") as f:
         f.write(f"{chiave_evento}\n")
@@ -35,6 +36,42 @@ def ha_gia_votato(chiave_evento):
     if not os.path.exists("voti_fatti.txt"): return False
     with open("voti_fatti.txt", "r") as f:
         return str(chiave_evento) in f.read().splitlines()
+
+def parsing_data_biker(testo_data):
+    """ Funzione intelligente che traduce le date testuali dei raduni in date reali per l'ordinamento """
+    testo = str(testo_data).lower().strip()
+    if not testo or testo == "nan": return pd.NaT
+    
+    # Dizionario dei mesi in italiano
+    mesi = {
+        'gen': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'mag': 5, 'giu': 6, 
+        'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'nov': 11, 'dic': 12
+    }
+    
+    # Trova il mese nel testo
+    mese_num = None
+    for k, v in mesi.items():
+        if k in testo:
+            mese_num = v
+            break
+            
+    # Se non trova un mese testuale, prova il parsing numerico standard italiano
+    if not mese_num:
+        try: return pd.to_datetime(testo, dayfirst=True, errors='coerce')
+        except: return pd.NaT
+        
+    # Trova l'anno a 4 cifre (es: 2026), se manca imposta 2026 di default
+    anno_match = re.search(r'\b(202\d)\b', testo)
+    anno = int(anno_match.group(1)) if anno_match else 2026
+    
+    # Trova il primo numero nel testo (il giorno d'inizio del raduno)
+    giorno_match = re.search(r'\d+', testo)
+    giorno = int(giorno_match.group(0)) if giorno_match else 1
+    
+    try:
+        return pd.Timestamp(year=anno, month=mese_num, day=giorno)
+    except:
+        return pd.NaT
 
 # --- 4. CSS INTEGRATO ORIGINALE ---
 st.markdown("""
@@ -94,7 +131,7 @@ else:
         with st.expander("➕ AGGIUNGI EVENTO"):
             with st.form("add_form", clear_on_submit=True):
                 n = st.text_input("Nome Evento")
-                d = st.text_input("Data (es: 31/12/2026)")
+                d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
                 l = st.text_input("Luogo")
                 i = st.text_area("Info")
                 f = st.file_uploader("Locandina", type=['jpg', 'png'])
@@ -105,19 +142,19 @@ else:
                     if f:
                         with open(path, "wb") as file: file.write(f.getbuffer())
                     
-                    # Salva nel foglio
+                    # Salva nel foglio Google
                     scheda.append_row([n, d, l, i, path, 0])
                     st.rerun()
 
         # --- LISTA EVENTI ORDINATA ---
         if not df.empty:
-            # Crea un indice basato sulla posizione REALE del foglio (+2 per via di intestazione e indice che parte da 1)
+            # Crea un indice basato sulla posizione REALE nel foglio (+2 per via di intestazione e indice che parte da 1)
             df['GSheet_Row'] = df.index + 2
             
-            # FIX DELLE DATE: dayfirst=True forza Python a interpretare il formato italiano GG/MM/AAAA
-            df['Data_Date'] = pd.to_datetime(df['Data'].astype(str).str.strip(), dayfirst=True, errors='coerce')
+            # APPLICAZIONE PARSING INTELLIGENTE DELLE DATE
+            df['Data_Date'] = df['Data'].apply(parsing_data_biker)
             
-            # Ordina cronologicamente. Se ci sono date scritte male (NaT), finiscono in fondo (na_position='last')
+            # Ordina in modo cronologico perfetto. Eventuali date completamente illeggibili vanno in fondo.
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             
             # Forza partecipanti a numero intero
