@@ -27,14 +27,14 @@ gc = inizializza_connessione_google()
 NOME_DEL_FOGLIO = "app motoraduni"  # Nome del tuo foglio Google
 
 # --- 3. FUNZIONI DATI (Voti Locali sul Telefono) ---
-def registra_voto(id_evento):
+def registra_voto(chiave_evento):
     with open("voti_fatti.txt", "a") as f:
-        f.write(f"{id_evento}\n")
+        f.write(f"{chiave_evento}\n")
 
-def ha_gia_votato(id_evento):
+def ha_gia_votato(chiave_evento):
     if not os.path.exists("voti_fatti.txt"): return False
     with open("voti_fatti.txt", "r") as f:
-        return str(id_evento) in f.read().splitlines()
+        return str(chiave_evento) in f.read().splitlines()
 
 # --- 4. CSS INTEGRATO ORIGINALE ---
 st.markdown("""
@@ -76,12 +76,16 @@ else:
         foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
         scheda = foglio_di_calcolo.get_worksheet(0)
         
+        # AUTO-GUARIGIONE: Forza le intestazioni corrette nella riga 1 del foglio Google
+        colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"]
+        scheda.update(range_name='A1:F1', values=[colonne_esatte])
+        
         # Recupero dei record correnti
         dati = scheda.get_all_records()
         if dati:
             df = pd.DataFrame(dati)
         else:
-            df = pd.DataFrame(columns=["Nome Evento / Raduno", "Data", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"])
+            df = pd.DataFrame(columns=colonne_esatte)
 
         # --- FORM AGGIUNGI EVENTO ---
         with st.expander("➕ AGGIUNGI EVENTO"):
@@ -98,13 +102,13 @@ else:
                     if f:
                         with open(path, "wb") as file: file.write(f.getbuffer())
                     
-                    # Salva su Google Sheets
+                    # Salva su Google Sheets rispettando l'ordine delle colonne corrette
                     scheda.append_row([n, d, l, i, path, 0])
                     st.rerun()
 
         # --- LISTA EVENTI ORDINATA ---
         if not df.empty:
-            # Crea un indice di backup per ricordarsi la riga esatta su Google Sheets (+2 perché Sheets parte da 1 e riga 1 ha le intestazioni)
+            # Crea un indice di backup basato sulla posizione reale nel foglio Google (+2 perché Sheets parte da 1 e la riga 1 ha i titoli)
             df['GSheet_Row'] = df.index + 2
             
             # Conversione Data per ordinamento cronologico
@@ -116,6 +120,9 @@ else:
 
             for idx, row in df.iterrows():
                 riga_foglio_google = int(row['GSheet_Row'])
+                
+                # Creiamo una chiave unica per il voto basata su Nome e Data (stabile e sicura)
+                chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                 
                 # Apertura Blocco Rettangolo Evento (Expander)
                 with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
@@ -137,12 +144,13 @@ else:
                 # --- POSIZIONATO ESATTAMENTE SOTTO L'EVENTO (FUORI DAL RETTANGOLO) ---
                 conteggio = int(row['Partecipanti'])
                 label = f"CI VADO 🔥 {conteggio}"
-                if ha_gia_votato(idx):
+                
+                if ha_gia_votato(chiave_voto):
                     st.button(label, key=f"btn_{idx}", disabled=True)
                 else:
                     if st.button(label, key=f"btn_{idx}"):
                         scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
-                        registra_voto(idx)
+                        registra_voto(chiave_voto)
                         st.rerun()
                 
                 # Spazio vuoto distanziatore tra un evento e l'altro
