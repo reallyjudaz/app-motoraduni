@@ -1,61 +1,161 @@
 import streamlit as st
+import pandas as pd
+import os
 import gspread
 from google.oauth2 import service_account
 
-# 1. Configurazione grafica della pagina
-st.set_page_config(page_title="Bikers Bot App", page_icon="🚴", layout="centered")
-st.title("🚴 Bikers Bot - Pannello di Controllo")
+# --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
+st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
-# 2. Connessione sicura e ottimizzata a Google Cloud
+# --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
 def inizializza_connessione_google():
     try:
-        # Carica le credenziali dai Secrets di Streamlit
         credentials_info = dict(st.secrets["gcp_service_account"])
-        
-        # Converte i caratteri letterali '\n' in reali ritorni a capo per la libreria RSA
         if "private_key" in credentials_info:
             credentials_info["private_key"] = credentials_info["private_key"].replace("\\n", "\n")
-        
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        
         credentials = service_account.Credentials.from_service_account_info(credentials_info, scopes=scopes)
         return gspread.authorize(credentials)
     except Exception as e:
-        st.error("Errore critico durante l'inizializzazione delle credenziali di Google.")
-        st.exception(e)
         return None
 
-# 3. Avvio della connessione
 gc = inizializza_connessione_google()
+NOME_DEL_FOGLIO = "app motoraduni"  # Nome del tuo foglio Google impostato in precedenza
 
-if gc is not None:
-    st.success("⚡ Connessione a Google Cloud stabilita correttamente!")
-    
-    # =========================================================================
-    # ⚠️ CAMBIA SOLO QUESTA RIGA: Inserisci il nome ESATTO del tuo Foglio Google
-    # =========================================================================
-    NOME_DEL_FOGLIO = "app motoraduni" 
-    
+# --- 3. FUNZIONI DATI (Voti Locali sul Telefono) ---
+def registra_voto(id_evento):
+    with open("voti_fatti.txt", "a") as f:
+        f.write(f"{id_evento}\n")
+
+def ha_gia_votato(id_evento):
+    if not os.path.exists("voti_fatti.txt"): return False
+    with open("voti_fatti.txt", "r") as f:
+        return str(id_evento) in f.read().splitlines()
+
+# --- 4. CSS INTEGRATO ORIGINALE ---
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+.stApp { background-color: #161719; }
+#MainMenu, footer, header {visibility: hidden !important;}
+.block-container { padding-top: 0rem !important; padding-bottom: 7rem !important; }
+
+.titolo-gotico { font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -20px !important; }
+.sottotitolo { font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }
+
+.stExpander { background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }
+.streamlit-expanderHeader { color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }
+
+div[data-testid="stButton"] button { 
+    background-color: #ff9100 !important; color: black !important; font-weight: bold !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; width: 100%;
+}
+
+label, .stTextInput label, .stTextArea label, .stFileUploader label { color: white !important; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- 5. HEADER ---
+if os.path.exists("logo_custom.png"):
+    st.image("logo_custom.png", use_container_width=True)
+
+st.markdown("<h1 class='titolo-gotico'>Iron & Rubber</h1>", unsafe_allow_html=True)
+st.markdown("<p class='sottotitolo'>«Non è la meta, è la strada a rivelare chi sei.»</p>", unsafe_allow_html=True)
+
+# --- 6. LOGICA DI CARICAMENTO ED ESECUZIONE ---
+if gc is None:
+    st.error("Errore critico nella connessione a Google Cloud nei Secrets.")
+else:
     try:
-        # Apertura del database su Google Sheets
+        # Connessione alla scheda di Google Sheets
         foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
         scheda = foglio_di_calcolo.get_worksheet(0)
         
-        st.subheader(f"Dati attuali nel foglio: *{NOME_DEL_FOGLIO}*")
+        # Recupero dei record correnti
         dati = scheda.get_all_records()
-        
         if dati:
-            st.dataframe(dati, use_container_width=True)
+            df = pd.DataFrame(dati)
         else:
-            st.info("Il foglio è connesso, ma è attualmente vuoto o manca la riga di intestazione.")
+            df = pd.DataFrame(columns=["Nome Evento / Raduno", "Data", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"])
+
+        # --- FORM AGGIUNGI EVENTO ---
+        with st.expander("➕ AGGIUNGI EVENTO"):
+            with st.form("add_form", clear_on_submit=True):
+                n = st.text_input("Nome Evento")
+                d = st.text_input("Data (es: 2026-12-31)")
+                l = st.text_input("Luogo")
+                i = st.text_area("Info")
+                f = st.file_uploader("Locandina", type=['jpg', 'png'])
+             
+                if st.form_submit_button("SALVA"):
+                    if not os.path.exists("locandine"): os.makedirs("locandine")
+                    path = os.path.join("locandine", f.name) if f else ""
+                    if f:
+                        with open(path, "wb") as file: file.write(f.getbuffer())
+                    
+                    # Salva direttamente inserendo una riga su Google Sheets
+                    scheda.append_row([n, d, l, i, path, 0])
+                    st.rerun()
+
+        # --- LISTA EVENTI ORDINATA ---
+        if not df.empty:
+            # Crea un indice di backup per ricordarsi la riga esatta su Google Sheets (+2 perché Sheets parte da 1 e riga 1 ha le intestazioni)
+            df['GSheet_Row'] = df.index + 2
             
-    except gspread.exceptions.SpreadsheetNotFound:
-        st.error(f"Impossibile trovare il file Google Sheets chiamato '{NOME_DEL_FOGLIO}'.")
-        st.info("Verifica che il nome sia scritto bene e di aver condiviso il file del foglio con l'email del bot come Editor.")
+            # Conversione Data per ordinamento cronologico
+            df['Data_Date'] = pd.to_datetime(df['Data'], errors='coerce')
+            df = df.sort_values(by='Data_Date', ascending=True)
+            
+            # Forza partecipanti a numero intero
+            df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
+
+            for idx, row in df.iterrows():
+                riga_foglio_google = int(row['GSheet_Row'])
+                
+                with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
+                    st.write(f"📍 **Luogo:** {row['Luogo']}")
+                    st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
+                    
+                    img_path = str(row.get('Locandina', ''))
+                    if img_path and os.path.exists(img_path):
+                        st.image(img_path, use_container_width=True)
+                    
+                    # Modifica Protetta con Password
+                    pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
+                    if pwd == "Judaz2026":
+                        new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
+                        if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
+                            # Colonna 4 su Google Sheets corrisponde a "Dettagli / Note"
+                            scheda.update_cell(riga_foglio_google, 4, new_info)
+                            st.rerun()
+
+                    # Bottone Partecipa con contatore reale
+                    conteggio = int(row['Partecipanti'])
+                    label = f"CI VADO 🔥 {conteggio}"
+                    if ha_gia_votato(idx):
+                        st.button(label, key=f"btn_{idx}", disabled=True)
+                    else:
+                        if st.button(label, key=f"btn_{idx}"):
+                            # Colonna 6 su Google Sheets corrisponde a "Partecipanti"
+                            scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
+                            registra_voto(idx)
+                            st.rerun()
+        else:
+            st.info("Il database su Google Sheets è vuoto. Aggiungi il tuo primo evento!")
+
     except Exception as e:
-        st.error("Si è verificato un errore durante il recupero dei dati:")
-        st.exception(e)
+        st.error(f"Errore durante l'elaborazione dei dati: {e}")
+
+# --- 7. MENU FISSO IN BASSO ---
+st.markdown("""
+<div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
+    <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
+    <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>MC</a>
+    <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>ADMIN</a>
+</div>
+""", unsafe_allow_html=True)
