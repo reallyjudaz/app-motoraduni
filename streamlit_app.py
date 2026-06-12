@@ -4,9 +4,30 @@ import os
 import re
 import gspread
 from google.oauth2 import service_account
+import streamlit.components.v1 as components
 
-# --- 1. CONFIGURAZIONE GRAFICA (Nome e Icona incorporati per installazione automatica) ---
+# --- 1. CONFIGURAZIONE GRAFICA (Nome e Icona impostati) ---
 st.set_page_config(page_title="Iron & Rubber", page_icon="icona.png", layout="centered")
+
+# --- TRUCCO JAVASCRIPT: Rimuove la corona rossa di Streamlit e forza il tuo logo ---
+components.html("""
+<script>
+function ripulisciStreamlit() {
+    var pDoc = window.parent.document;
+    // Forza il titolo corretto
+    pDoc.title = "Iron & Rubber";
+    // Trova e distrugge il manifest di Streamlit che impone la corona
+    var manifest = pDoc.querySelector('link[rel="manifest"]');
+    if (manifest) {
+        manifest.remove();
+        console.log("Manifest rimosso con successo!");
+    }
+}
+// Esegue il controllo all'avvio e dopo 1 secondo per sicurezza
+ripulisciStreamlit();
+setTimeout(ripulisciStreamlit, 1000);
+</script>
+""", height=0)
 
 # --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
