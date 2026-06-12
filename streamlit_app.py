@@ -5,8 +5,8 @@ import re
 import gspread
 from google.oauth2 import service_account
 
-# --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
-st.set_page_config(page_title="Iron & Rubber", layout="centered")
+# --- 1. CONFIGURAZIONE GRAFICA (Nome e Icona incorporati per installazione automatica) ---
+st.set_page_config(page_title="Iron & Rubber", page_icon="icona.png", layout="centered")
 
 # --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
@@ -114,7 +114,7 @@ else:
         else:
             df = pd.DataFrame(columns=colonne_esatte)
 
-        # --- FORM AGGIUNGI EVENTO MODIFICATO ---
+        # --- FORM AGGIUNGI EVENTO ---
         with st.expander("➕ AGGIUNGI EVENTO"):
             with st.form("add_form", clear_on_submit=True):
                 n = st.text_input("Nome Evento")
@@ -122,7 +122,7 @@ else:
                 l = st.text_input("Luogo")
                 i = st.text_area("Info")
                 
-                # Sostituito del tutto l'upload con l'inserimento del Link chiaro
+                # Inserimento Link della Locandina
                 url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
              
                 if st.form_submit_button("SALVA"):
