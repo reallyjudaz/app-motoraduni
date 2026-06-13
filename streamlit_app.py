@@ -1,96 +1,191 @@
 import streamlit as st
+import pandas as pd
+import os
+import re
+import gspread
+from google.oauth2 import service_account
 
-# --- 1. INIZIALIZZAZIONE DATI ---
-# (Se usi un database come Firebase o SQLite, sostituisci questo dizionario con le tue funzioni di lettura)
-if 'eventi' not in st.session_state:
-    st.session_state.eventi = {
-        "id_1": {"titolo": "Riunione di Marketing", "data": "2026-06-15", "descrizione": "Discussione budget Q3"},
-        "id_2": {"titolo": "Lancio Nuovo Prodotto", "data": "2026-07-01", "descrizione": "Presentazione Iron & Rubber"}
+# --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
+st.set_page_config(page_title="Iron & Rubber", layout="centered")
+
+# --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
+@st.cache_resource
+def inizializza_connessione_google():
+    try:
+        credentials_info = dict(st.secrets["gcp_service_account"])
+        if "private_key" in credentials_info:
+            credentials_info["private_key"] = credentials_info["private_key"].replace("\\n", "\n")
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        credentials = service_account.Credentials.from_service_account_info(credentials_info, scopes=scopes)
+        return gspread.authorize(credentials)
+    except Exception as e:
+        return None
+
+gc = inizializza_connessione_google()
+NOME_DEL_FOGLIO = "app motoraduni"
+
+# --- 3. FUNZIONI DATI ---
+def registra_voto(chiave_evento):
+    with open("voti_fatti.txt", "a") as f:
+        f.write(f"{chiave_evento}\n")
+
+def ha_gia_votato(chiave_evento):
+    if not os.path.exists("voti_fatti.txt"): return False
+    with open("voti_fatti.txt", "r") as f:
+        return str(chiave_evento) in f.read().splitlines()
+
+def parsing_data_biker(testo_data):
+    testo = str(testo_data).lower().strip()
+    if not testo or testo == "nan": return pd.NaT
+    mesi = {
+        'gen': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'mag': 5, 'giu': 6, 
+        'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'nov': 11, 'dic': 12
     }
+    mese_num = None
+    for k, v in mesi.items():
+        if k in testo:
+            mese_num = v
+            break
+    if not mese_num:
+        try: return pd.to_datetime(testo, dayfirst=True, errors='coerce')
+        except: return pd.NaT
+    anno_match = re.search(r'\b(202\d)\b', testo)
+    anno = int(anno_match.group(1)) if anno_match else 2026
+    giorno_match = re.search(r'\d+', testo)
+    giorno = int(giorno_match.group(0)) if giorno_match else 1
+    try: return pd.Timestamp(year=anno, month=mese_num, day=giorno)
+    except: return pd.NaT
 
-# Stato per tracciare quale evento è selezionato per la modifica (None = nessuno)
-if 'id_evento_in_modifica' not in st.session_state:
-    st.session_state.id_evento_in_modifica = None
+# --- 4. CSS INTEGRATO E COLORI ---
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
 
+.stApp { background-color: #161719; }
+#MainMenu, footer, header {visibility: hidden !important;}
+.block-container { padding-top: 0rem !important; padding-bottom: 7rem !important; }
 
-st.title("📅 Gestione Eventi")
+.titolo-gotico { font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -20px !important; }
+.sottotitolo { font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }
 
-# --- 2. MOSTRA LA LISTA DEGLI EVENTI ---
-st.subheader("I tuoi Eventi")
+.stExpander { background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }
+.streamlit-expanderHeader { color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }
 
-# Usiamo list(...) per evitare errori nel ciclo se eliminiamo un elemento
-for ev_id, ev_data in list(st.session_state.eventi.items()):
-    col1, col2 = st.columns([4, 1])
-    
-    # Mostra titolo e data attuali
-    col1.write(f"**{ev_data['titolo']}** — {ev_data['data']}")
-    
-    # Pulsante per aprire il pannello di modifica
-    if col2.button("Modifica", key=f"btn_attiva_{ev_id}"):
-        st.session_state.id_evento_in_modifica = ev_id
-        st.rerun()
+/* Forza il testo NERO sui bottoni arancioni e sul tasto SALVA */
+div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { 
+    background-color: #ff9100 !important; 
+    color: black !important; 
+    font-weight: bold !important; 
+    font-family: 'Special Elite', cursive !important; 
+    border-radius: 5px !important; 
+    height: 38px !important; 
+    width: 100%;
+}
 
+label, .stTextInput label, .stTextArea label { color: white !important; }
+</style>
+""", unsafe_allow_html=True)
 
-# --- 3. PANNELLO DI MODIFICA ED ELIMINAZIONE (Compare solo se un evento è selezionato) ---
-if st.session_state.id_evento_in_modifica is not None:
-    st.divider()
-    id_corrente = st.session_state.id_evento_in_modifica
-    
-    # Controllo di sicurezza nel caso l'evento sia stato rimosso
-    if id_corrente in st.session_state.eventi:
-        evento_corrente = st.session_state.eventi[id_corrente]
+if os.path.exists("logo_custom.png"):
+    st.image("logo_custom.png", use_container_width=True)
+
+st.markdown("<h1 class='titolo-gotico'>Iron & Rubber</h1>", unsafe_allow_html=True)
+st.markdown("<p class='sottotitolo'>«Non è la meta, è la strada a rivelare chi sei.»</p>", unsafe_allow_html=True)
+
+if gc is None:
+    st.error("Errore critico nella connessione a Google Cloud.")
+else:
+    try:
+        foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
+        scheda = foglio_di_calcolo.get_worksheet(0)
+        colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"]
         
-        st.subheader(f"🛠️ Pannello di Modifica: {evento_corrente['titolo']}")
-        
-        # Utilizziamo st.form per bloccare il refresh continuo mentre l'utente scrive
-        with st.form(key="form_modifica_evento"):
-            
-            # INPUT 1: Modifica del TITOLO (Modificabile come richiesto)
-            nuovo_titolo = st.text_input("Titolo dell'evento", value=evento_corrente["titolo"])
-            
-            # Altri campi
-            nuova_data = st.text_input("Data dell'evento", value=evento_corrente["data"])
-            nuova_descrizione = st.text_area("Descrizione", value=evento_corrente["descrizione"])
-            
-            # Pulsanti di invio del Form (Salva / Annulla)
-            col_salva, col_annulla = st.columns([1, 1])
-            with col_salva:
-                submit_salva = st.form_submit_button("Salva Modifiche", type="primary")
-            with col_annulla:
-                submit_annulla = st.form_submit_button("Annulla")
-        
-        # TASTO ELIMINA (Richiesto): Posizionato subito sotto il form per sicurezza,
-        # separato dalle azioni di salvataggio per evitare click involontari.
-        st.write("---")
-        col_canc, _ = st.columns([1, 2])
-        with col_canc:
-            if st.button("🗑️ Elimina Evento", type="secondary", key="btn_elimina_definitivo"):
-                # Rimuove l'evento dal dizionario (o esegui qui la query DELETE sul tuo DB)
-                del st.session_state.eventi[id_corrente]
+        tutti_i_dati = scheda.get_all_values()
+        if tutti_i_dati and len(tutti_i_dati) > 1:
+            righe_pulite = []
+            for riga in tutti_i_dati[1:]:
+                riga_6 = (riga + [""] * 6)[:6]
+                righe_pulite.append(riga_6)
+            df = pd.DataFrame(righe_pulite, columns=colonne_esatte)
+        else:
+            df = pd.DataFrame(columns=colonne_esatte)
+
+        # --- FORM AGGIUNGI EVENTO MODIFICATO ---
+        with st.expander("➕ AGGIUNGI EVENTO"):
+            with st.form("add_form", clear_on_submit=True):
+                n = st.text_input("Nome Evento")
+                d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
+                l = st.text_input("Luogo")
+                i = st.text_area("Info")
                 
-                # Reset dello stato e rinfresco pagina
-                st.session_state.id_evento_in_modifica = None
-                st.toast("Evento eliminato definitivamente!", icon="🗑️")
-                st.rerun()
+                # Sostituito del tutto l'upload con l'inserimento del Link chiaro
+                url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
+             
+                if st.form_submit_button("SALVA"):
+                    path_finale = url_inserito.strip()
+                    scheda.append_row([n, d, l, i, path_finale, 0])
+                    st.rerun()
 
-        # --- GESTIONE DELLE AZIONI DEL FORM ---
-        if submit_salva:
-            # Sovrascrive i dati nel session_state (o esegui qui la query UPDATE sul tuo DB)
-            st.session_state.eventi[id_corrente]["titolo"] = nuovo_titolo
-            st.session_state.eventi[id_corrente]["data"] = nuova_data
-            st.session_state.eventi[id_corrente]["descrizione"] = nuova_descrizione
-            
-            # Chiude il pannello di modifica e aggiorna la schermata
-            st.session_state.id_evento_in_modifica = None
-            st.toast("Evento aggiornato con successo!", icon="✅")
-            st.rerun()
-            
-        if submit_annulla:
-            # Chiude semplicemente il pannello senza salvare nulla
-            st.session_state.id_evento_in_modifica = None
-            st.rerun()
-            
-    else:
-        # Se l'evento corrente non esiste più nella lista, resetta lo stato di modifica
-        st.session_state.id_evento_in_modifica = None
-        st.rerun()
+        # --- LISTA EVENTI ---
+        if not df.empty:
+            df['GSheet_Row'] = df.index + 2
+            df['Data_Date'] = df['Data'].apply(parsing_data_biker)
+            df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
+            df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
+
+            for idx, row in df.iterrows():
+                riga_foglio_google = int(row['GSheet_Row'])
+                chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
+                
+                with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
+                    st.write(f"📍 **Luogo:** {row['Luogo']}")
+                    st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
+                    
+                    img_path = str(row.get('Locandina', '')).strip()
+                    if img_path:
+                        if img_path.startswith("http://") or img_path.startswith("https://"):
+                            st.image(img_path, use_container_width=True)
+                        elif os.path.exists(img_path):
+                            st.image(img_path, use_container_width=True)
+                    
+                    # --- PANNELLO MODIFICA ---
+                    pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
+                    if pwd == "Judaz2026":
+                        new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
+                        new_img = st.text_input(f"Modifica Link Locandina (es. da Postimages) {idx}", value=img_path, key=f"img_{idx}")
+                        
+                        if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
+                            scheda.update_cell(riga_foglio_google, 4, new_info)
+                            scheda.update_cell(riga_foglio_google, 5, new_img)
+                            st.rerun()
+
+                # --- BOTTONE PARTECIPA ---
+                conteggio = int(row['Partecipanti'])
+                label = f"CI VADO 🔥 {conteggio}"
+                if ha_gia_votato(chiave_voto):
+                    st.button(label, key=f"btn_{idx}", disabled=True)
+                else:
+                    if st.button(label, key=f"btn_{idx}"):
+                        scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
+                        registra_voto(chiave_voto)
+                        st.rerun()
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+        else:
+            st.info("Il database su Google Sheets è vuoto.")
+
+    except Exception as e:
+        st.error(f"Errore: {e}")
+
+# --- MENU FISSO ---
+st.markdown("""
+<div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
+    <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
+    <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>MC</a>
+    <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>ADMIN</a>
+</div>
+""", unsafe_allow_html=True)
