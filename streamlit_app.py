@@ -114,7 +114,7 @@ else:
         else:
             df = pd.DataFrame(columns=colonne_esatte)
 
-        # --- FORM AGGIUNGI EVENTO MODIFICATO ---
+        # --- FORM AGGIUNGI EVENTO ---
         with st.expander("➕ AGGIUNGI EVENTO"):
             with st.form("add_form", clear_on_submit=True):
                 n = st.text_input("Nome Evento")
@@ -122,7 +122,6 @@ else:
                 l = st.text_input("Luogo")
                 i = st.text_area("Info")
                 
-                # Sostituito del tutto l'upload con l'inserimento del Link chiaro
                 url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
              
                 if st.form_submit_button("SALVA"):
@@ -152,16 +151,28 @@ else:
                         elif os.path.exists(img_path):
                             st.image(img_path, use_container_width=True)
                     
-                    # --- PANNELLO MODIFICA ---
+                    # --- PANNELLO MODIFICA ED ELIMINAZIONE MODIFICATO ---
                     pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                     if pwd == "Judaz2026":
+                        # 1. Aggiunto campo per modificare il Titolo dell'evento
+                        new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
                         new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
                         new_img = st.text_input(f"Modifica Link Locandina (es. da Postimages) {idx}", value=img_path, key=f"img_{idx}")
                         
-                        if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                            scheda.update_cell(riga_foglio_google, 4, new_info)
-                            scheda.update_cell(riga_foglio_google, 5, new_img)
-                            st.rerun()
+                        # Struttura a colonne per affiancare "Salva" ed "Elimina"
+                        col_salva, col_elimina = st.columns(2)
+                        
+                        with col_salva:
+                            if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
+                                scheda.update_cell(riga_foglio_google, 1, new_title)  # Aggiorna il Titolo (Colonna 1)
+                                scheda.update_cell(riga_foglio_google, 4, new_info)   # Aggiorna le Info (Colonna 4)
+                                scheda.update_cell(riga_foglio_google, 5, new_img)    # Aggiorna l'immagine (Colonna 5)
+                                st.rerun()
+                                
+                        with col_elimina:
+                            if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
+                                scheda.delete_rows(riga_foglio_google)  # Cancella l'intera riga su Google Sheets
+                                st.rerun()
 
                 # --- BOTTONE PARTECIPA ---
                 conteggio = int(row['Partecipanti'])
