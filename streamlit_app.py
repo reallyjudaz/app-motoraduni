@@ -88,19 +88,23 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label { color: white !important; }
 
-/* --- STILE CUSTOM PER LE TENDINE FILTRO --- */
+/* --- STILE CUSTOM PER LE TENDINE FILTRO PIÙ PICCOLE E COMPATTE --- */
 div[data-testid="stSelectbox"] > label {
     color: #ff9100 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.95rem !important;
+    font-size: 0.85rem !important; /* Etichetta più piccola */
+    margin-bottom: 2px !important;
 }
 div[data-testid="stSelectbox"] div[data-baseweb="select"] {
     background-color: #1f2124 !important;
     border: 2px solid #ff9100 !important;
     border-radius: 5px !important;
+    height: 34px !important; /* Altezza ridotta del selettore */
+    min-height: 34px !important;
 }
 div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
     color: white !important;
+    font-size: 0.85rem !important; /* Testo interno più piccolo */
 }
 </style>
 """, unsafe_allow_html=True)
@@ -109,7 +113,7 @@ if os.path.exists("logo_custom.png"):
     st.image("logo_custom.png", use_container_width=True)
 
 st.markdown("<h1 class='titolo-gotico'>Iron & Rubber</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sottotitolo'>«Non è la meta, è la strada a revelar chi sei.»</p>", unsafe_allow_html=True)
+st.markdown("<p class='sottotitolo'>«Non è la meta, è la strada a rivelare chi sei.»</p>", unsafe_allow_html=True)
 
 if gc is None:
     st.error("Errore critico nella connessione a Google Cloud.")
@@ -144,9 +148,9 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
-        # --- TITOLO SEZIONE MODIFICATO (Più piccolo per stare su una riga) ---
+        # --- TITOLO SEZIONE MODIFICATO (Corto per stare sempre su una riga) ---
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive; font-size: 1.3rem;'>Prossimi eventi in programma</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive; font-size: 1.4rem;'>Prossimi eventi</h3>", unsafe_allow_html=True)
 
         # --- LISTA EVENTI ---
         if not df.empty:
@@ -167,7 +171,7 @@ else:
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
-            # --- SEZIONE FILTRI ---
+            # --- SEZIONE FILTRI COMPATTI ---
             regioni_italia = ["Tutte", "Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
                               "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardia", "Marche", "Molise", 
                               "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
@@ -183,12 +187,12 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # Layout a due colonne per i filtri
+            # Layout affiancato e compatto
             col_regione, col_data = st.columns(2)
             with col_regione:
-                regione_scelta = st.selectbox("Seleziona Regione", regioni_italia)
+                regione_scelta = st.selectbox("Regione", regioni_italia)
             with col_data:
-                mese_scelto = st.selectbox("Seleziona Mese", opzioni_mesi)
+                mese_scelto = st.selectbox("Mese", opzioni_mesi)
             
             st.markdown("<br>", unsafe_allow_html=True)
 
