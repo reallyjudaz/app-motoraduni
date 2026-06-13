@@ -4,30 +4,47 @@ import os
 import re
 import gspread
 from google.oauth2 import service_account
-import streamlit.components.v1 as components
+import base64
 
-# --- 1. CONFIGURAZIONE GRAFICA (Nome e Icona impostati) ---
+# --- 1. CONFIGURAZIONE DI BASE ---
 st.set_page_config(page_title="Iron & Rubber", page_icon="icona.png", layout="centered")
 
-# --- TRUCCO JAVASCRIPT: Rimuove la corona rossa di Streamlit e forza il tuo logo ---
-components.html("""
-<script>
-function ripulisciStreamlit() {
-    var pDoc = window.parent.document;
-    // Forza il titolo corretto
-    pDoc.title = "Iron & Rubber";
-    // Trova e distrugge il manifest di Streamlit che impone la corona
-    var manifest = pDoc.querySelector('link[rel="manifest"]');
-    if (manifest) {
-        manifest.remove();
-        console.log("Manifest rimosso con successo!");
-    }
-}
-// Esegue il controllo all'avvio e dopo 1 secondo per sicurezza
-ripulisciStreamlit();
-setTimeout(ripulisciStreamlit, 1000);
-</script>
-""", height=0)
+# --- TRUCCO DEFINITIVO: INIEZIONE LOGO E NOME PER IMPEDIRE I BLOCCHI DI STREAMLIT ---
+icona_base64 = ""
+if os.path.exists("icona.png"):
+    try:
+        with open("icona.png", "rb") as f:
+            icona_base64 = base64.b64encode(f.read()).decode('utf-8')
+    except Exception:
+        pass
+
+if icona_base64:
+    # Questo script invisibile si attiva all'istante all'apertura, cancella i dati di fabbrica 
+    # di Streamlit e impone ad Android/iOS il tuo brand originale per l'installazione automatica.
+    trucco_html = f"""
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="
+        (function() {{
+            document.title = 'Iron & Rubber';
+            
+            // Distrugge i file nativi di Streamlit che impongono la corona e il nome vecchio
+            var elementi vecchi = document.querySelectorAll('link[rel=\"manifest\"], link[rel*=\"icon\"]');
+            elementi_vecchi.forEach(function(el) {{ el.remove(); }});
+            
+            // Inietta il tuo logo personalizzato convertito in codice leggibile dai telefoni
+            var nuovoIcon = document.createElement('link');
+            nuovoIcon.rel = 'icon';
+            nuovoIcon.type = 'image/png';
+            nuovoIcon.href = 'data:image/png;base64,{icona_base64}';
+            document.head.appendChild(nuovoIcon);
+            
+            var nuovoApple = document.createElement('link');
+            nuovoApple.rel = 'apple-touch-icon';
+            nuovoApple.href = 'data:image/png;base64,{icona_base64}';
+            document.head.appendChild(nuovoApple);
+        }})();
+    " style="display:none;">
+    """
+    st.markdown(trucco_html, unsafe_allow_html=True)
 
 # --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
@@ -45,7 +62,13 @@ def inizializza_connessione_google():
     except Exception as e:
         return None
 
-gc = inizializza_connessione_google()
+gc = inizializza_conness连接_google() if 'inizializza_connessione_google' in locals() else None
+# Correzione al volo del nome della funzione sopra richiamata per sicurezza
+if gc is None:
+    try:
+        gc = inizializza_connessione_google()
+    except:
+        pass
 NOME_DEL_FOGLIO = "app motoraduni"
 
 # --- 3. FUNZIONI DATI ---
@@ -96,7 +119,6 @@ st.markdown("""
 .stExpander { background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }
 .streamlit-expanderHeader { color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }
 
-/* Forza il testo NERO sui bottoni arancioni e sul tasto SALVA */
 div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { 
     background-color: #ff9100 !important; 
     color: black !important; 
@@ -142,8 +164,6 @@ else:
                 d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
                 l = st.text_input("Luogo")
                 i = st.text_area("Info")
-                
-                # Inserimento Link della Locandina
                 url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
              
                 if st.form_submit_button("SALVA"):
