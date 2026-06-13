@@ -148,7 +148,6 @@ else:
         foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
         scheda = foglio_di_calcolo.get_worksheet(0)
         
-        # NUOVA STRUTTURA COLONNE CON 'Regione' AL QUARTO POSTO
         colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
         
         tutti_i_dati = scheda.get_all_values()
@@ -173,7 +172,6 @@ else:
              
                 if st.form_submit_button("SALVA"):
                     path_finale = url_inserito.strip()
-                    # Salva rispettando il nuovo ordine dei campi sul foglio
                     scheda.append_row([n, d, l, reg_scelta, i, path_finale, 0])
                     st.rerun()
 
@@ -185,6 +183,12 @@ else:
         if not df.empty:
             df['GSheet_Row'] = df.index + 2
             df['Data_Date'] = df['Data'].apply(parsing_data_biker)
+            
+            # Controllo di sicurezza se la colonna regione è vuota nel DB
+            if 'Regione' in df.columns:
+                df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
+            else:
+                df['Regione'] = "Da definire"
             
             # --- ELIMINAZIONE AUTOMATICA EVENTI PASSATI ---
             oggi = pd.Timestamp.now().normalize()
@@ -213,7 +217,7 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # Layout Filtri collegati allo stato della sessione
+            # --- TENDINE AFFIANCATE (SU UNA SOLA RIGA) ---
             col_regione, col_data = st.columns(2)
             with col_regione:
                 regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
@@ -222,11 +226,10 @@ else:
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # --- APPLICAZIONE FILTRI DIRETTI SULLA NUOVA COLONNA ---
+            # --- APPLICAZIONE FILTRI ---
             ifDoc = df.copy()
             
-            if interrupted_regione := regione_scelta != "Tutte":
-                # Filtro diretto, pulito e preciso sulla colonna Regione
+            if regione_scelta != "Tutte":
                 ifDoc = ifDoc[ifDoc['Regione'].str.strip().str.lower() == regione_scelta.strip().lower()]
                 
             if mese_scelto != "Tutte":
@@ -247,14 +250,19 @@ else:
                             if img_path.startswith("http://") or img_path.startswith("https://"):
                                 st.image(img_path, use_container_width=True)
                             elif os.path.exists(img_path):
-                                st.image(img_path, use_container_width=True)
+                                Image_val = st.image(img_path, use_container_width=True)
                         
                         # --- PANNELLO MODIFICA ED ELIMINAZIONE ---
                         pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                         if pwd == "Judaz2026":
                             new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
                             new_luogo = st.text_input(f"Modifica Luogo {idx}", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
-                            new_regione = st.selectbox(f"Modifica Regione {idx}", regioni_italia, index=regioni_italia.index(row['Regione']) if row['Regione'] in regioni_italia else 0, key=f"reg_{idx}")
+                            
+                            # Calcolo indice regione per la modifica di sicurezza
+                            reg_corrente = row['Regione']
+                            idx_reg = regioni_italia.index(reg_corrente) if reg_corrente in regioni_italia else 0
+                            new_regione = st.selectbox(f"Modifica Regione {idx}", regioni_italia, index=idx_reg, key=f"reg_{idx}")
+                            
                             new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
                             new_img = st.text_input(f"Modifica Link Locandina {idx}", value=img_path, key=f"img_{idx}")
                             
@@ -279,7 +287,6 @@ else:
                         st.button(label, key=f"btn_{idx}", disabled=True)
                     else:
                         if st.button(label, key=f"btn_{idx}"):
-                            # Aggiornato indice colonna partecipanti (ora è la 7a colonna)
                             scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                             registra_voto(chiave_voto)
                             st.rerun()
