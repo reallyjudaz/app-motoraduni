@@ -129,9 +129,9 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
-        # --- TITOLO SEZIONE ---
+        # --- TITOLO SEZIONE MODIFICATO (Arancione e Centrato) ---
         st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("Prossimi eventi in programma")
+        st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>Prossimi eventi in programma</h3>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
         # --- LISTA EVENTI ---
