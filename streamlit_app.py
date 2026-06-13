@@ -8,6 +8,20 @@ from google.oauth2 import service_account
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
+# --- GESTIONE RESET TRAMITE PARAMETRI URL (Per il tasto HOME in basso) ---
+# Se l'utente ha clicca su HOME, resettiamo i filtri nella sessione e ripuliamo l'URL
+if "reset" in st.query_params:
+    st.session_state["sel_regione"] = "Tutte"
+    st.session_state["sel_mese"] = "Tutte"
+    st.query_params.clear()
+    st.rerun()
+
+# Inizializzazione delle variabili di stato se non esistono
+if "sel_regione" not in st.session_state:
+    st.session_state["sel_regione"] = "Tutte"
+if "sel_mese" not in st.session_state:
+    st.session_state["sel_mese"] = "Tutte"
+
 # --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
 def inizializza_connessione_google():
@@ -75,7 +89,7 @@ st.markdown("""
 .stExpander { background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }
 .streamlit-expanderHeader { color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }
 
-/* Forza il testo NERO sui bottoni arancioni e sul tasto SALVA */
+/* Testo NERO sui bottoni arancioni e sul tasto SALVA */
 div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { 
     background-color: #ff9100 !important; 
     color: black !important; 
@@ -88,26 +102,26 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label { color: white !important; }
 
-/* --- STILE TENDINE AGGIORNATO E SICURO (Niente blocchi di altezza che rompono i click) --- */
+/* --- STILE TENDINE: SFONDO BIANCO E TESTO NERO --- */
 div[data-testid="stSelectbox"] > label {
     color: #ff9100 !important;
     font-family: 'Special Elite', cursive !important;
     font-size: 0.9rem !important;
     margin-bottom: 3px !important;
 }
-/* Sfondo bianco e bordo arancione sul box principale */
+/* Corpo principale della tendina */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] {
     background-color: #ffffff !important;
     border: 2px solid #ff9100 !important;
     border-radius: 5px !important;
 }
-/* Testo interno sempre nero */
+/* Testo selezionato dentro la tendina */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
     font-size: 0.9rem !important;
 }
-/* Menu a discesa aperto: lista opzioni */
+/* Lista opzioni quando aperta */
 div[data-baseweb="popover"] ul {
     background-color: #ffffff !important;
 }
@@ -158,7 +172,7 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
-        # --- TITOLO SEZIONE (Corto su una riga) ---
+        # --- TITOLO SEZIONE ---
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive; font-size: 1.4rem;'>Prossimi eventi</h3>", unsafe_allow_html=True)
 
@@ -177,7 +191,7 @@ else:
                     scheda.delete_rows(int(riga_passata['GSheet_Row']))
                 st.rerun()
 
-            # Ordinamento cronologico base
+            # Ordinamento cronologico
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
@@ -197,7 +211,7 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # Layout a 2 colonne pulito
+            # Layout Filtri collegati allo stato della sessione
             col_regione, col_data = st.columns(2)
             with col_regione:
                 regione_scelta = st.selectbox("Regione", regioni_italia, key="sel_regione")
@@ -206,17 +220,16 @@ else:
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # --- LOGICA APPLICAZIONE ATTIVA FILTRI ---
+            # --- APPLICAZIONE FILTRI ---
             ifDoc = df.copy()
             
             if regione_scelta != "Tutte":
-                # Ricerca testuale non case-sensitive sul Luogo scritto nel foglio Google
                 ifDoc = ifDoc[ifDoc['Luogo'].str.contains(regione_scelta.strip(), case=False, na=False)]
                 
             if mese_scelto != "Tutte":
                 ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
 
-            # Mostra i risultati finali
+            # Mostra i risultati
             if not ifDoc.empty:
                 for idx, row in ifDoc.iterrows():
                     riga_foglio_google = int(row['GSheet_Row'])
@@ -238,17 +251,15 @@ else:
                         if pwd == "Judaz2026":
                             new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
                             new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
-                            new_img = st.text_input(f"Modifica Link Locandina (es. da Postimages) {idx}", value=img_path, key=f"img_{idx}")
+                            new_img = st.text_input(f"Modifica Link Locandina {idx}", value=img_path, key=f"img_{idx}")
                             
                             col_salva, col_elimina = st.columns(2)
-                            
                             with col_salva:
                                 if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
                                     scheda.update_cell(riga_foglio_google, 1, new_title)
                                     scheda.update_cell(riga_foglio_google, 4, new_info)
                                     scheda.update_cell(riga_foglio_google, 5, new_img)
                                     st.rerun()
-                                    
                             with col_elimina:
                                 if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
                                     scheda.delete_rows(riga_foglio_google)
@@ -274,10 +285,10 @@ else:
     except Exception as e:
         st.error(f"Errore: {e}")
 
-# --- MENU FISSO ---
+# --- MENU FISSO (Con parametro ?reset=1 attivo sul link HOME) ---
 st.markdown("""
 <div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
-    <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
+    <a href='?reset=1' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
     <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>MC</a>
     <a href='#' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>ADMIN</a>
 </div>
