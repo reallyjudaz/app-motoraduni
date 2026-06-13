@@ -88,33 +88,33 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label { color: white !important; }
 
-/* --- STILE TENDINE: SFONDO BIANCO E TESTO NERO --- */
+/* --- STILE TENDINE AGGIORNATO E SICURO (Niente blocchi di altezza che rompono i click) --- */
 div[data-testid="stSelectbox"] > label {
     color: #ff9100 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.85rem !important;
-    margin-bottom: 2px !important;
+    font-size: 0.9rem !important;
+    margin-bottom: 3px !important;
 }
-/* Corpo principale della tendina */
+/* Sfondo bianco e bordo arancione sul box principale */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] {
     background-color: #ffffff !important;
     border: 2px solid #ff9100 !important;
     border-radius: 5px !important;
-    height: 34px !important;
-    min-height: 34px !important;
 }
-/* Testo dentro la tendina selezionata */
+/* Testo interno sempre nero */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.85rem !important;
+    font-size: 0.9rem !important;
 }
-/* Forza il testo nero e lo sfondo bianco anche nel menu a discesa che si apre */
-div[data-baseweb="popover"] ul, div[data-baseweb="popover"] li {
+/* Menu a discesa aperto: lista opzioni */
+div[data-baseweb="popover"] ul {
     background-color: #ffffff !important;
+}
+div[data-baseweb="popover"] li {
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.85rem !important;
+    font-size: 0.9rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -158,7 +158,7 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
-        # --- TITOLO SEZIONE (Corto e su una sola riga) ---
+        # --- TITOLO SEZIONE (Corto su una riga) ---
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive; font-size: 1.4rem;'>Prossimi eventi</h3>", unsafe_allow_html=True)
 
@@ -181,7 +181,7 @@ else:
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
-            # --- SEZIONE FILTRI COMPATTI CON CHIAVE DI STATO BLOCCATA ---
+            # --- OPZIONI FILTRI ---
             regioni_italia = ["Tutte", "Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
                               "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardia", "Marche", "Molise", 
                               "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
@@ -197,23 +197,26 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # Layout affiancato (Colonne con chiavi univoche stabili)
+            # Layout a 2 colonne pulito
             col_regione, col_data = st.columns(2)
             with col_regione:
-                regione_scelta = st.selectbox("Regione", regioni_italia, key="filtro_regione_prod")
+                regione_scelta = st.selectbox("Regione", regioni_italia, key="sel_regione")
             with col_data:
-                mese_scelto = st.selectbox("Mese", opzioni_mesi, key="filtro_mese_prod")
+                mese_scelto = st.selectbox("Mese", opzioni_mesi, key="sel_mese")
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # Applicazione attiva dei filtri sul set di dati duplicato
+            # --- LOGICA APPLICAZIONE ATTIVA FILTRI ---
             ifDoc = df.copy()
+            
             if regione_scelta != "Tutte":
-                ifDoc = ifDoc[ifDoc['Luogo'].str.contains(regione_scelta, case=False, na=False)]
+                # Ricerca testuale non case-sensitive sul Luogo scritto nel foglio Google
+                ifDoc = ifDoc[ifDoc['Luogo'].str.contains(regione_scelta.strip(), case=False, na=False)]
+                
             if mese_scelto != "Tutte":
                 ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
 
-            # Mostra gli eventi effettivamente filtrati
+            # Mostra i risultati finali
             if not ifDoc.empty:
                 for idx, row in ifDoc.iterrows():
                     riga_foglio_google = int(row['GSheet_Row'])
