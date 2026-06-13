@@ -129,7 +129,7 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
-        # --- TITOLO SEZIONE MODIFICATO (Arancione e Centrato) ---
+        # --- TITOLO SEZIONE (Arancione e Centrato) ---
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>Prossimi eventi in programma</h3>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -138,6 +138,24 @@ else:
         if not df.empty:
             df['GSheet_Row'] = df.index + 2
             df['Data_Date'] = df['Data'].apply(parsing_data_biker)
+            
+            # -----------------------------------------------------------------
+            # --- AGGIUNTO: ELIMINAZIONE AUTOMATICA EVENTI PASSATI -----------
+            # -----------------------------------------------------------------
+            oggi = pd.Timestamp.now().normalize()  # Data di oggi a mezzanotte
+            
+            # Filtriamo solo le righe dove la data è valida ed è strettamente precedente a oggi
+            eventi_passati = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]
+            
+            if not eventi_passati.empty:
+                # Ordiniamo le righe in modo decrescente (dal basso verso l'alto) per non sballare gli indici di gspread
+                eventi_passati = eventi_passati.sort_values(by='GSheet_Row', ascending=False)
+                for _, riga_passata in eventi_passati.iterrows():
+                    scheda.delete_rows(int(riga_passata['GSheet_Row']))
+                st.rerun()  # Ricarica la pagina con il database aggiornato
+            # -----------------------------------------------------------------
+
+            # Continua con il normale ordinamento per gli eventi futuri
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
