@@ -88,23 +88,33 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label { color: white !important; }
 
-/* --- STILE CUSTOM PER LE TENDINE FILTRO PIÙ PICCOLE E COMPATTE --- */
+/* --- STILE TENDINE: SFONDO BIANCO E TESTO NERO --- */
 div[data-testid="stSelectbox"] > label {
     color: #ff9100 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.85rem !important; /* Etichetta più piccola */
+    font-size: 0.85rem !important;
     margin-bottom: 2px !important;
 }
+/* Corpo principale della tendina */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] {
-    background-color: #1f2124 !important;
+    background-color: #ffffff !important;
     border: 2px solid #ff9100 !important;
     border-radius: 5px !important;
-    height: 34px !important; /* Altezza ridotta del selettore */
+    height: 34px !important;
     min-height: 34px !important;
 }
+/* Testo dentro la tendina selezionata */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
-    color: white !important;
-    font-size: 0.85rem !important; /* Testo interno più piccolo */
+    color: #000000 !important;
+    font-family: 'Special Elite', cursive !important;
+    font-size: 0.85rem !important;
+}
+/* Forza il testo nero e lo sfondo bianco anche nel menu a discesa che si apre */
+div[data-baseweb="popover"] ul, div[data-baseweb="popover"] li {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Special Elite', cursive !important;
+    font-size: 0.85rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -148,7 +158,7 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
-        # --- TITOLO SEZIONE MODIFICATO (Corto per stare sempre su una riga) ---
+        # --- TITOLO SEZIONE (Corto e su una sola riga) ---
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive; font-size: 1.4rem;'>Prossimi eventi</h3>", unsafe_allow_html=True)
 
@@ -171,7 +181,7 @@ else:
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
-            # --- SEZIONE FILTRI COMPATTI ---
+            # --- SEZIONE FILTRI COMPATTI CON CHIAVE DI STATO BLOCCATA ---
             regioni_italia = ["Tutte", "Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
                               "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardia", "Marche", "Molise", 
                               "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
@@ -187,23 +197,23 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # Layout affiancato e compatto
+            # Layout affiancato (Colonne con chiavi univoche stabili)
             col_regione, col_data = st.columns(2)
             with col_regione:
-                regione_scelta = st.selectbox("Regione", regioni_italia)
+                regione_scelta = st.selectbox("Regione", regioni_italia, key="filtro_regione_prod")
             with col_data:
-                mese_scelto = st.selectbox("Mese", opzioni_mesi)
+                mese_scelto = st.selectbox("Mese", opzioni_mesi, key="filtro_mese_prod")
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # Applicazione attiva dei filtri
+            # Applicazione attiva dei filtri sul set di dati duplicato
             ifDoc = df.copy()
             if regione_scelta != "Tutte":
                 ifDoc = ifDoc[ifDoc['Luogo'].str.contains(regione_scelta, case=False, na=False)]
             if mese_scelto != "Tutte":
                 ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
 
-            # Mostra gli eventi filtrati
+            # Mostra gli eventi effettivamente filtrati
             if not ifDoc.empty:
                 for idx, row in ifDoc.iterrows():
                     riga_foglio_google = int(row['GSheet_Row'])
