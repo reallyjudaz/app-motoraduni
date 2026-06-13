@@ -9,7 +9,6 @@ from google.oauth2 import service_account
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
 # --- GESTIONE RESET TRAMITE PARAMETRI URL (Per il tasto HOME in basso) ---
-# Se l'utente ha clicca su HOME, resettiamo i filtri nella sessione e ripuliamo l'URL
 if "reset" in st.query_params:
     st.session_state["sel_regione"] = "Tutte"
     st.session_state["sel_mese"] = "Tutte"
@@ -40,6 +39,12 @@ def inizializza_connessione_google():
 
 gc = inizializza_connessione_google()
 NOME_DEL_FOGLIO = "app motoraduni"
+
+# --- LISTA REGIONI STRUTTURATA ---
+regioni_italia = ["Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
+                  "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardia", "Marche", "Molise", 
+                  "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
+                  "Umbria", "Valle d'Aosta", "Veneto"]
 
 # --- 3. FUNZIONI DATI ---
 def registra_voto(chiave_evento):
@@ -109,19 +114,16 @@ div[data-testid="stSelectbox"] > label {
     font-size: 0.9rem !important;
     margin-bottom: 3px !important;
 }
-/* Corpo principale della tendina */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] {
     background-color: #ffffff !important;
     border: 2px solid #ff9100 !important;
     border-radius: 5px !important;
 }
-/* Testo selezionato dentro la tendina */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
     font-size: 0.9rem !important;
 }
-/* Lista opzioni quando aperta */
 div[data-baseweb="popover"] ul {
     background-color: #ffffff !important;
 }
@@ -145,14 +147,16 @@ else:
     try:
         foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
         scheda = foglio_di_calcolo.get_worksheet(0)
-        colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Dettagli / Note", "Locandina", "Partecipanti"]
+        
+        # NUOVA STRUTTURA COLONNE CON 'Regione' AL QUARTO POSTO
+        colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
         
         tutti_i_dati = scheda.get_all_values()
         if tutti_i_dati and len(tutti_i_dati) > 1:
             righe_pulite = []
             for riga in tutti_i_dati[1:]:
-                riga_6 = (riga + [""] * 6)[:6]
-                righe_pulite.append(riga_6)
+                riga_7 = (riga + [""] * 7)[:7]
+                righe_pulite.append(riga_7)
             df = pd.DataFrame(righe_pulite, columns=colonne_esatte)
         else:
             df = pd.DataFrame(columns=colonne_esatte)
@@ -162,14 +166,15 @@ else:
             with st.form("add_form", clear_on_submit=True):
                 n = st.text_input("Nome Evento")
                 d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
-                l = st.text_input("Luogo")
+                l = st.text_input("Luogo (Città, Via, ecc.)")
+                reg_scelta = st.selectbox("Seleziona Regione", regioni_italia)
                 i = st.text_area("Info")
-                
                 url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
              
                 if st.form_submit_button("SALVA"):
                     path_finale = url_inserito.strip()
-                    scheda.append_row([n, d, l, i, path_finale, 0])
+                    # Salva rispettando il nuovo ordine dei campi sul foglio
+                    scheda.append_row([n, d, l, reg_scelta, i, path_finale, 0])
                     st.rerun()
 
         # --- TITOLO SEZIONE ---
@@ -195,11 +200,8 @@ else:
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
-            # --- OPZIONI FILTRI ---
-            regioni_italia = ["Tutte", "Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
-                              "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardia", "Marche", "Molise", 
-                              "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
-                              "Umbria", "Valle d'Aosta", "Veneto"]
+            # --- OPZIONI FILTRI TENDINE ---
+            opzioni_regioni = ["Tutte"] + regioni_italia
             
             mesi_ita = {1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile', 5: 'Maggio', 6: 'Giugno', 
                         7: 'Luglio', 8: 'Agosto', 9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'}
@@ -214,17 +216,18 @@ else:
             # Layout Filtri collegati allo stato della sessione
             col_regione, col_data = st.columns(2)
             with col_regione:
-                regione_scelta = st.selectbox("Regione", regioni_italia, key="sel_regione")
+                regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
             with col_data:
                 mese_scelto = st.selectbox("Mese", opzioni_mesi, key="sel_mese")
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # --- APPLICAZIONE FILTRI ---
+            # --- APPLICAZIONE FILTRI DIRETTI SULLA NUOVA COLONNA ---
             ifDoc = df.copy()
             
-            if regione_scelta != "Tutte":
-                ifDoc = ifDoc[ifDoc['Luogo'].str.contains(regione_scelta.strip(), case=False, na=False)]
+            if interrupted_regione := regione_scelta != "Tutte":
+                # Filtro diretto, pulito e preciso sulla colonna Regione
+                ifDoc = ifDoc[ifDoc['Regione'].str.strip().str.lower() == regione_scelta.strip().lower()]
                 
             if mese_scelto != "Tutte":
                 ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
@@ -236,7 +239,7 @@ else:
                     chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                     
                     with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
-                        st.write(f"📍 **Luogo:** {row['Luogo']}")
+                        st.write(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']})")
                         st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
                         
                         img_path = str(row.get('Locandina', '')).strip()
@@ -250,6 +253,8 @@ else:
                         pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                         if pwd == "Judaz2026":
                             new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
+                            new_luogo = st.text_input(f"Modifica Luogo {idx}", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
+                            new_regione = st.selectbox(f"Modifica Regione {idx}", regioni_italia, index=regioni_italia.index(row['Regione']) if row['Regione'] in regioni_italia else 0, key=f"reg_{idx}")
                             new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
                             new_img = st.text_input(f"Modifica Link Locandina {idx}", value=img_path, key=f"img_{idx}")
                             
@@ -257,8 +262,10 @@ else:
                             with col_salva:
                                 if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
                                     scheda.update_cell(riga_foglio_google, 1, new_title)
-                                    scheda.update_cell(riga_foglio_google, 4, new_info)
-                                    scheda.update_cell(riga_foglio_google, 5, new_img)
+                                    scheda.update_cell(riga_foglio_google, 3, new_luogo)
+                                    scheda.update_cell(riga_foglio_google, 4, new_regione)
+                                    scheda.update_cell(riga_foglio_google, 5, new_info)
+                                    scheda.update_cell(riga_foglio_google, 6, new_img)
                                     st.rerun()
                             with col_elimina:
                                 if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
@@ -272,7 +279,8 @@ else:
                         st.button(label, key=f"btn_{idx}", disabled=True)
                     else:
                         if st.button(label, key=f"btn_{idx}"):
-                            scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
+                            # Aggiornato indice colonna partecipanti (ora è la 7a colonna)
+                            scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                             registra_voto(chiave_voto)
                             st.rerun()
                     
