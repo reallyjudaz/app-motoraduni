@@ -107,15 +107,16 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label { color: white !important; }
 
-/* Forzatura layout colonne affiancate su Mobile */
-[data-testid="stHorizontalBlock"] {
-    flex-direction: row !important;
-    gap: 10px !important;
+/* --- FORZATURA TOTALE TENDINE AFFIANCATE (GRID CSS) --- */
+div[data-testid="stHorizontalBlock"] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
 }
-[data-testid="column"] {
-    width: calc(50% - 5px) !important;
-    flex: 1 1 calc(50% - 5px) !important;
-    min-width: 0px !important;
+div[data-testid="stHorizontalBlock"] > div {
+    max-width: 100% !important;
+    width: 100% !important;
 }
 
 /* --- STILE TENDINE: SFONDO BIANCO E TESTO NERO --- */
@@ -227,7 +228,7 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # --- TENDINE BLOCCHATE SU UNA SOLA RIGA (Anche su Mobile) ---
+            # --- TENDINE COSTRIPTE SULLA STESSA LINEA ---
             col_regione, col_data = st.columns(2)
             with col_regione:
                 regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
