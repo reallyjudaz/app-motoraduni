@@ -87,6 +87,21 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 }
 
 label, .stTextInput label, .stTextArea label { color: white !important; }
+
+/* --- STILE CUSTOM PER LE TENDINE FILTRO --- */
+div[data-testid="stSelectbox"] > label {
+    color: #ff9100 !important;
+    font-family: 'Special Elite', cursive !important;
+    font-size: 0.95rem !important;
+}
+div[data-testid="stSelectbox"] div[data-baseweb="select"] {
+    background-color: #1f2124 !important;
+    border: 2px solid #ff9100 !important;
+    border-radius: 5px !important;
+}
+div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
+    color: white !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -94,7 +109,7 @@ if os.path.exists("logo_custom.png"):
     st.image("logo_custom.png", use_container_width=True)
 
 st.markdown("<h1 class='titolo-gotico'>Iron & Rubber</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sottotitolo'>«Non è la meta, è la strada a rivelare chi sei.»</p>", unsafe_allow_html=True)
+st.markdown("<p class='sottotitolo'>«Non è la meta, è la strada a revelar chi sei.»</p>", unsafe_allow_html=True)
 
 if gc is None:
     st.error("Errore critico nella connessione a Google Cloud.")
@@ -129,84 +144,113 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
-        # --- TITOLO SEZIONE (Arancione e Centrato) ---
+        # --- TITOLO SEZIONE MODIFICATO (Più piccolo per stare su una riga) ---
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>Prossimi eventi in programma</h3>", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive; font-size: 1.3rem;'>Prossimi eventi in programma</h3>", unsafe_allow_html=True)
 
         # --- LISTA EVENTI ---
         if not df.empty:
             df['GSheet_Row'] = df.index + 2
             df['Data_Date'] = df['Data'].apply(parsing_data_biker)
             
-            # -----------------------------------------------------------------
-            # --- AGGIUNTO: ELIMINAZIONE AUTOMATICA EVENTI PASSATI -----------
-            # -----------------------------------------------------------------
-            oggi = pd.Timestamp.now().normalize()  # Data di oggi a mezzanotte
-            
-            # Filtriamo solo le righe dove la data è valida ed è strettamente precedente a oggi
+            # --- ELIMINAZIONE AUTOMATICA EVENTI PASSATI ---
+            oggi = pd.Timestamp.now().normalize()
             eventi_passati = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]
             
             if not eventi_passati.empty:
-                # Ordiniamo le righe in modo decrescente (dal basso verso l'alto) per non sballare gli indici di gspread
                 eventi_passati = eventi_passati.sort_values(by='GSheet_Row', ascending=False)
                 for _, riga_passata in eventi_passati.iterrows():
                     scheda.delete_rows(int(riga_passata['GSheet_Row']))
-                st.rerun()  # Ricarica la pagina con il database aggiornato
-            # -----------------------------------------------------------------
+                st.rerun()
 
-            # Continua con il normale ordinamento per gli eventi futuri
+            # Ordinamento cronologico base
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
-            for idx, row in df.iterrows():
-                riga_foglio_google = int(row['GSheet_Row'])
-                chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
-                
-                with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
-                    st.write(f"📍 **Luogo:** {row['Luogo']}")
-                    st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
-                    
-                    img_path = str(row.get('Locandina', '')).strip()
-                    if img_path:
-                        if img_path.startswith("http://") or img_path.startswith("https://"):
-                            st.image(img_path, use_container_width=True)
-                        elif os.path.exists(img_path):
-                            st.image(img_path, use_container_width=True)
-                    
-                    # --- PANNELLO MODIFICA ED ELIMINAZIONE ---
-                    pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
-                    if pwd == "Judaz2026":
-                        new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
-                        new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
-                        new_img = st.text_input(f"Modifica Link Locandina (es. da Postimages) {idx}", value=img_path, key=f"img_{idx}")
-                        
-                        col_salva, col_elimina = st.columns(2)
-                        
-                        with col_salva:
-                            if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                scheda.update_cell(riga_foglio_google, 1, new_title)
-                                scheda.update_cell(riga_foglio_google, 4, new_info)
-                                scheda.update_cell(riga_foglio_google, 5, new_img)
-                                st.rerun()
-                                
-                        with col_elimina:
-                            if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
-                                scheda.delete_rows(riga_foglio_google)
-                                st.rerun()
+            # --- SEZIONE FILTRI ---
+            regioni_italia = ["Tutte", "Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
+                              "Friuli-Venezia Giulia", "Lazio", "Liguria", "Lombardia", "Marche", "Molise", 
+                              "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
+                              "Umbria", "Valle d'Aosta", "Veneto"]
+            
+            mesi_ita = {1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile', 5: 'Maggio', 6: 'Giugno', 
+                        7: 'Luglio', 8: 'Agosto', 9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'}
+            
+            df['Mese_Filtro'] = df['Data_Date'].apply(lambda x: f"{mesi_ita[x.month]} {x.year}" if pd.notna(x) else "Da definire")
+            
+            _mesi_nel_db = list(df['Mese_Filtro'].unique())
+            opzioni_mesi = ["Tutte"] + [m for m in _mesi_nel_db if m != "Da definire"]
+            if "Da definire" in _mesi_nel_db:
+                opzioni_mesi.append("Da definire")
 
-                # --- BOTTONE PARTECIPA ---
-                conteggio = int(row['Partecipanti'])
-                label = f"CI VADO 🔥 {conteggio}"
-                if ha_gia_votato(chiave_voto):
-                    st.button(label, key=f"btn_{idx}", disabled=True)
-                else:
-                    if st.button(label, key=f"btn_{idx}"):
-                        scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
-                        registra_voto(chiave_voto)
-                        st.rerun()
-                
-                st.markdown("<br>", unsafe_allow_html=True)
+            # Layout a due colonne per i filtri
+            col_regione, col_data = st.columns(2)
+            with col_regione:
+                regione_scelta = st.selectbox("Seleziona Regione", regioni_italia)
+            with col_data:
+                mese_scelto = st.selectbox("Seleziona Mese", opzioni_mesi)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Applicazione attiva dei filtri
+            ifDoc = df.copy()
+            if regione_scelta != "Tutte":
+                ifDoc = ifDoc[ifDoc['Luogo'].str.contains(regione_scelta, case=False, na=False)]
+            if mese_scelto != "Tutte":
+                ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
+
+            # Mostra gli eventi filtrati
+            if not ifDoc.empty:
+                for idx, row in ifDoc.iterrows():
+                    riga_foglio_google = int(row['GSheet_Row'])
+                    chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
+                    
+                    with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
+                        st.write(f"📍 **Luogo:** {row['Luogo']}")
+                        st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
+                        
+                        img_path = str(row.get('Locandina', '')).strip()
+                        if img_path:
+                            if img_path.startswith("http://") or img_path.startswith("https://"):
+                                st.image(img_path, use_container_width=True)
+                            elif os.path.exists(img_path):
+                                st.image(img_path, use_container_width=True)
+                        
+                        # --- PANNELLO MODIFICA ED ELIMINAZIONE ---
+                        pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
+                        if pwd == "Judaz2026":
+                            new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
+                            new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
+                            new_img = st.text_input(f"Modifica Link Locandina (es. da Postimages) {idx}", value=img_path, key=f"img_{idx}")
+                            
+                            col_salva, col_elimina = st.columns(2)
+                            
+                            with col_salva:
+                                if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
+                                    scheda.update_cell(riga_foglio_google, 1, new_title)
+                                    scheda.update_cell(riga_foglio_google, 4, new_info)
+                                    scheda.update_cell(riga_foglio_google, 5, new_img)
+                                    st.rerun()
+                                    
+                            with col_elimina:
+                                if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
+                                    scheda.delete_rows(riga_foglio_google)
+                                    st.rerun()
+
+                    # --- BOTTONE PARTECIPA ---
+                    conteggio = int(row['Partecipanti'])
+                    label = f"CI VADO 🔥 {conteggio}"
+                    if ha_gia_votato(chiave_voto):
+                        st.button(label, key=f"btn_{idx}", disabled=True)
+                    else:
+                        if st.button(label, key=f"btn_{idx}"):
+                            scheda.update_cell(riga_foglio_google, 6, int(conteggio + 1))
+                            registra_voto(chiave_voto)
+                            st.rerun()
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+            else:
+                st.info("Nessun evento trovato con i filtri selezionati.")
         else:
             st.info("Il database su Google Sheets è vuoto.")
 
