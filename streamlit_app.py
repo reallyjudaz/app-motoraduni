@@ -107,12 +107,23 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label { color: white !important; }
 
+/* Forzatura layout colonne affiancate su Mobile */
+[data-testid="stHorizontalBlock"] {
+    flex-direction: row !important;
+    gap: 10px !important;
+}
+[data-testid="column"] {
+    width: calc(50% - 5px) !important;
+    flex: 1 1 calc(50% - 5px) !important;
+    min-width: 0px !important;
+}
+
 /* --- STILE TENDINE: SFONDO BIANCO E TESTO NERO --- */
 div[data-testid="stSelectbox"] > label {
     color: #ff9100 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.9rem !important;
-    margin-bottom: 3px !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 2px !important;
 }
 div[data-testid="stSelectbox"] div[data-baseweb="select"] {
     background-color: #ffffff !important;
@@ -122,7 +133,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] {
 div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
 }
 div[data-baseweb="popover"] ul {
     background-color: #ffffff !important;
@@ -130,7 +141,7 @@ div[data-baseweb="popover"] ul {
 div[data-baseweb="popover"] li {
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -166,7 +177,7 @@ else:
                 n = st.text_input("Nome Evento")
                 d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
                 l = st.text_input("Luogo (Città, Via, ecc.)")
-                reg_scelta = st.selectbox("Seleziona Regione", regioni_italia)
+                reg_scelta = st.selectbox("Seleziona Regione", regioni_italia, key="add_regione_form")
                 i = st.text_area("Info")
                 url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
              
@@ -184,7 +195,6 @@ else:
             df['GSheet_Row'] = df.index + 2
             df['Data_Date'] = df['Data'].apply(parsing_data_biker)
             
-            # Controllo di sicurezza se la colonna regione è vuota nel DB
             if 'Regione' in df.columns:
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
             else:
@@ -217,7 +227,7 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # --- TENDINE AFFIANCATE (SU UNA SOLA RIGA) ---
+            # --- TENDINE BLOCCHATE SU UNA SOLA RIGA (Anche su Mobile) ---
             col_regione, col_data = st.columns(2)
             with col_regione:
                 regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
@@ -250,7 +260,7 @@ else:
                             if img_path.startswith("http://") or img_path.startswith("https://"):
                                 st.image(img_path, use_container_width=True)
                             elif os.path.exists(img_path):
-                                Image_val = st.image(img_path, use_container_width=True)
+                                st.image(img_path, use_container_width=True)
                         
                         # --- PANNELLO MODIFICA ED ELIMINAZIONE ---
                         pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
@@ -258,7 +268,6 @@ else:
                             new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
                             new_luogo = st.text_input(f"Modifica Luogo {idx}", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
                             
-                            # Calcolo indice regione per la modifica di sicurezza
                             reg_corrente = row['Regione']
                             idx_reg = regioni_italia.index(reg_corrente) if reg_corrente in regioni_italia else 0
                             new_regione = st.selectbox(f"Modifica Regione {idx}", regioni_italia, index=idx_reg, key=f"reg_{idx}")
@@ -300,7 +309,7 @@ else:
     except Exception as e:
         st.error(f"Errore: {e}")
 
-# --- MENU FISSO (Con parametro ?reset=1 attivo sul link HOME) ---
+# --- MENU FISSO ---
 st.markdown("""
 <div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
     <a href='?reset=1' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
