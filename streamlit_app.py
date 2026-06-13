@@ -129,6 +129,11 @@ else:
                     scheda.append_row([n, d, l, i, path_finale, 0])
                     st.rerun()
 
+        # --- TITOLO SEZIONE ---
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.subheader("Prossimi eventi in programma")
+        st.markdown("<br>", unsafe_allow_html=True)
+
         # --- LISTA EVENTI ---
         if not df.empty:
             df['GSheet_Row'] = df.index + 2
@@ -151,27 +156,25 @@ else:
                         elif os.path.exists(img_path):
                             st.image(img_path, use_container_width=True)
                     
-                    # --- PANNELLO MODIFICA ED ELIMINAZIONE MODIFICATO ---
+                    # --- PANNELLO MODIFICA ED ELIMINAZIONE ---
                     pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                     if pwd == "Judaz2026":
-                        # 1. Aggiunto campo per modificare il Titolo dell'evento
                         new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
                         new_info = st.text_area(f"Modifica Info {idx}", value=str(row.get('Dettagli / Note', '')), key=f"edit_{idx}")
                         new_img = st.text_input(f"Modifica Link Locandina (es. da Postimages) {idx}", value=img_path, key=f"img_{idx}")
                         
-                        # Struttura a colonne per affiancare "Salva" ed "Elimina"
                         col_salva, col_elimina = st.columns(2)
                         
                         with col_salva:
                             if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                scheda.update_cell(riga_foglio_google, 1, new_title)  # Aggiorna il Titolo (Colonna 1)
-                                scheda.update_cell(riga_foglio_google, 4, new_info)   # Aggiorna le Info (Colonna 4)
-                                scheda.update_cell(riga_foglio_google, 5, new_img)    # Aggiorna l'immagine (Colonna 5)
+                                scheda.update_cell(riga_foglio_google, 1, new_title)
+                                scheda.update_cell(riga_foglio_google, 4, new_info)
+                                scheda.update_cell(riga_foglio_google, 5, new_img)
                                 st.rerun()
                                 
                         with col_elimina:
                             if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
-                                scheda.delete_rows(riga_foglio_google)  # Cancella l'intera riga su Google Sheets
+                                scheda.delete_rows(riga_foglio_google)
                                 st.rerun()
 
                 # --- BOTTONE PARTECIPA ---
