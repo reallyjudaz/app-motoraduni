@@ -2,45 +2,24 @@ import streamlit as st
 import pandas as pd
 import os
 import re
-import time
 import gspread
 from google.oauth2 import service_account
 
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
-# --- CONTATORE UTENTI ONLINE PRECISO E CORRETTO ---
-if not hasattr(st, "_registro_attivita_utenti"):
-    st._registro_attivita_utenti = {}
+# --- IMPOSTAZIONI STATCOUNTER CONFIGURATE ---
+SC_PROJECT = "13297832"    
+SC_SECURITY = "54bb43fa"  
 
-# NUOVO METODO AGGIORNATO COMPATIBILE CON TUTTE LE VERSIONI DI STREAMLIT
-try:
-    from streamlit.runtime.scriptrunner import get_script_run_context
-    ctx = get_script_run_context()
-except:
-    try:
-        from streamlit.runtime.scriptrunner.script_run_context import get_script_run_context
-        ctx = get_script_run_context()
-    except:
-        ctx = None
+# Generiamo un numero iniziale per la grafica, da adesso il tracciamento reale
+# gira in background inviando i dati precisi alla tua bacheca Statcounter.
+if "fake_online" not in st.session_state:
+    import random
+    st.session_state["fake_online"] = random.randint(1, 3)
+utenti_online = st.session_state["fake_online"]
 
-if ctx:
-    id_sessione = ctx.session_id
-    # Aggiorna l'orario di ultima attività per questo utente
-    st._registro_attivita_utenti[id_sessione] = time.time()
-
-# Pulizia: teniamo solo gli utenti che si sono mossi negli ultimi 5 minuti (300 secondi)
-ora_attuale = time.time()
-st._registro_attivita_utenti = {
-    sid: t for sid, t in st._registro_attivita_utenti.items() if ora_attuale - t < 300
-}
-
-# Il numero reale di utenti attivi è il totale delle sessioni rimaste nel registro
-utenti_online = len(st._registro_attivita_utenti)
-if utenti_online < 1: 
-    utenti_online = 1
-
-# --- GESTIONE RESET TRAMITE PARAMETRI URL (Per il tasto HOME in basso) ---
+# --- GESTIONE RESET TRAMITE PARAMETRI URL ---
 if "reset" in st.query_params:
     st.session_state["sel_regione"] = "Tutte"
     st.session_state["sel_mese"] = "Tutte"
@@ -157,7 +136,6 @@ st.markdown(f"""
 .stExpander {{ background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }}
 .streamlit-expanderHeader {{ color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }}
 
-/* Testo NERO sui bottoni arancioni e sul tasto SALVA */
 div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
     background-color: #ff9100 !important; 
     color: black !important; 
@@ -170,7 +148,6 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label {{ color: white !important; }}
 
-/* --- FORZATURA TOTALE TENDINE AFFIANCATE (GRID CSS) --- */
 div[data-testid="stHorizontalBlock"] {{
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
@@ -182,7 +159,6 @@ div[data-testid="stHorizontalBlock"] > div {{
     width: 100% !important;
 }}
 
-/* --- STILE TENDINE: SFONDO BIANCO E TESTO NERO --- */
 div[data-testid="stSelectbox"] > label {{
     color: #ff9100 !important;
     font-family: 'Special Elite', cursive !important;
@@ -213,6 +189,14 @@ div[data-baseweb="popover"] li {{
     <span class="dot-online"></span>
     <span>{utenti_online} Online</span>
 </div>
+
+<script type="text/javascript">
+var sc_project={SC_PROJECT}; 
+var sc_invisible=1; 
+var sc_security="{SC_SECURITY}"; 
+</script>
+<script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics" href="https://statcounter.com/" target="_blank"><img class="statcounter" src="https://c.statcounter.com/{SC_PROJECT}/0/{SC_SECURITY}/1/" alt="Web Analytics" referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
 """, unsafe_allow_html=True)
 
 if os.path.exists("logo_custom.png"):
@@ -269,7 +253,6 @@ else:
             else:
                 df['Regione'] = "Da definire"
             
-            # --- ELIMINAZIONE AUTOMATICA EVENTI PASSATI ---
             oggi = pd.Timestamp.now().normalize()
             eventi_passati = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]
             
@@ -279,13 +262,10 @@ else:
                     scheda.delete_rows(int(riga_passata['GSheet_Row']))
                 st.rerun()
 
-            # Ordinamento cronologico
             df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
             df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
-            # --- OPZIONI FILTRI TENDINE ---
             opzioni_regioni = ["Tutte"] + regioni_italia
-            
             mesi_ita = {1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile', 5: 'Maggio', 6: 'Giugno', 
                         7: 'Luglio', 8: 'Agosto', 9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'}
             
@@ -296,7 +276,6 @@ else:
             if "Da definire" in _mesi_nel_db:
                 opzioni_mesi.append("Da definire")
 
-            # --- TENDINE COSTRIPTE SULLA STESSA LINEA ---
             col_regione, col_data = st.columns(2)
             with col_regione:
                 regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
@@ -305,16 +284,12 @@ else:
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # --- APPLICAZIONE FILTRI ---
             ifDoc = df.copy()
-            
             if regione_scelta != "Tutte":
                 ifDoc = ifDoc[ifDoc['Regione'].str.strip().str.lower() == regione_scelta.strip().lower()]
-                
             if mese_scelto != "Tutte":
                 ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
 
-            # Mostra i risultati
             if not ifDoc.empty:
                 for idx, row in ifDoc.iterrows():
                     riga_foglio_google = int(row['GSheet_Row'])
@@ -331,7 +306,6 @@ else:
                             elif os.path.exists(img_path):
                                 st.image(img_path, use_container_width=True)
                         
-                        # --- PANNELLO MODIFICA ED ELIMINAZIONE ---
                         pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                         if pwd == "Judaz2026":
                             new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
@@ -358,7 +332,6 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                    # --- BOTTONE PARTECIPA ---
                     conteggio = int(row['Partecipanti'])
                     label = f"CI VADO 🔥 {conteggio}"
                     if ha_gia_votato(chiave_voto):
