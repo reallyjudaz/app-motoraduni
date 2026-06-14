@@ -9,12 +9,21 @@ from google.oauth2 import service_account
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
-# --- CONTATORE UTENTI ONLINE PRECISO E PULITO ---
+# --- CONTATORE UTENTI ONLINE PRECISO E CORRETTO ---
 if not hasattr(st, "_registro_attivita_utenti"):
     st._registro_attivita_utenti = {}
 
-# Usiamo l'ID della sessione corrente come chiave univoca per questo browser
-ctx = st.runtime.scriptrunner.script_run_context.get_script_run_context()
+# NUOVO METODO AGGIORNATO COMPATIBILE CON TUTTE LE VERSIONI DI STREAMLIT
+try:
+    from streamlit.runtime.scriptrunner import get_script_run_context
+    ctx = get_script_run_context()
+except:
+    try:
+        from streamlit.runtime.scriptrunner.script_run_context import get_script_run_context
+        ctx = get_script_run_context()
+    except:
+        ctx = None
+
 if ctx:
     id_sessione = ctx.session_id
     # Aggiorna l'orario di ultima attività per questo utente
