@@ -8,6 +8,20 @@ from google.oauth2 import service_account
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
+# --- CONTATORE UTENTI ONLINE (SESSIONI ATTIVE) ---
+# Inizializziamo il contatore globale se non esiste
+if "utenti_connessi" not in st.session_state:
+    # Usiamo un trucco per incrementare un contatore condiviso nell'istanza del server
+    if not hasattr(st, "_conteggio_globale_utenti"):
+        st._conteggio_globale_utenti = 0
+    st._conteggio_globale_utenti += 1
+    st.session_state["utenti_connessi"] = True
+
+# Recuperiamo il numero attuale
+utenti_online = getattr(st, "_conteggio_globale_utenti", 1)
+# Sicurezza per evitare numeri negativi o zero se qualcosa fa i capricci
+if utenti_online < 1: utenti_online = 1
+
 # --- GESTIONE RESET TRAMITE PARAMETRI URL (Per il tasto HOME in basso) ---
 if "reset" in st.query_params:
     st.session_state["sel_regione"] = "Tutte"
@@ -79,23 +93,54 @@ def parsing_data_biker(testo_data):
     except: return pd.NaT
 
 # --- 4. CSS INTEGRATO E COLORI ---
-st.markdown("""
+st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
 
-.stApp { background-color: #161719; }
-#MainMenu, footer, header {visibility: hidden !important;}
-.block-container { padding-top: 0rem !important; padding-bottom: 7rem !important; }
+.stApp {{ background-color: #161719; }}
+#MainMenu, footer, header {{visibility: hidden !important;}}
+.block-container {{ padding-top: 2rem !important; padding-bottom: 7rem !important; }}
 
-.titolo-gotico { font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -20px !important; }
-.sottotitolo { font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }
+/* --- STILE DEL MICRO CONTATORE IN ALTO A DESTRA --- */
+.online-counter {{
+    position: absolute;
+    top: -10px;
+    right: 15px;
+    background: #1f2124;
+    border: 1px solid #ff9100;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-family: 'Special Elite', cursive;
+    font-size: 0.75rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 99999;
+}}
+.dot-online {{
+    width: 6px;
+    height: 6px;
+    background-color: #00ffcc;
+    border-radius: 50%;
+    display: inline-block;
+    animation: lampeggia 1.5s infinite;
+}}
+@keyframes lampeggia {{
+    0% {{ opacity: 0.3; }}
+    50% {{ opacity: 1; }}
+    100% {{ opacity: 0.3; }}
+}}
 
-.stExpander { background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }
-.streamlit-expanderHeader { color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }
+.titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
+.sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
+
+.stExpander {{ background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }}
+.streamlit-expanderHeader {{ color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }}
 
 /* Testo NERO sui bottoni arancioni e sul tasto SALVA */
-div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button { 
+div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
     background-color: #ff9100 !important; 
     color: black !important; 
     font-weight: bold !important; 
@@ -103,48 +148,53 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
     border-radius: 5px !important; 
     height: 38px !important; 
     width: 100%;
-}
+}}
 
-label, .stTextInput label, .stTextArea label { color: white !important; }
+label, .stTextInput label, .stTextArea label {{ color: white !important; }}
 
 /* --- FORZATURA TOTALE TENDINE AFFIANCATE (GRID CSS) --- */
-div[data-testid="stHorizontalBlock"] {
+div[data-testid="stHorizontalBlock"] {{
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 12px !important;
     width: 100% !important;
-}
-div[data-testid="stHorizontalBlock"] > div {
+}}
+div[data-testid="stHorizontalBlock"] > div {{
     max-width: 100% !important;
     width: 100% !important;
-}
+}}
 
 /* --- STILE TENDINE: SFONDO BIANCO E TESTO NERO --- */
-div[data-testid="stSelectbox"] > label {
+div[data-testid="stSelectbox"] > label {{
     color: #ff9100 !important;
     font-family: 'Special Elite', cursive !important;
     font-size: 0.85rem !important;
     margin-bottom: 2px !important;
-}
-div[data-testid="stSelectbox"] div[data-baseweb="select"] {
+}}
+div[data-testid="stSelectbox"] div[data-baseweb="select"] {{
     background-color: #ffffff !important;
     border: 2px solid #ff9100 !important;
     border-radius: 5px !important;
-}
-div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
+}}
+div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
     font-size: 0.85rem !important;
-}
-div[data-baseweb="popover"] ul {
+}}
+div[data-baseweb="popover"] ul {{
     background-color: #ffffff !important;
-}
-div[data-baseweb="popover"] li {
+}}
+div[data-baseweb="popover"] li {{
     color: #000000 !important;
     font-family: 'Special Elite', cursive !important;
     font-size: 0.85rem !important;
-}
+}}
 </style>
+
+<div class="online-counter">
+    <span class="dot-online"></span>
+    <span>{utenti_online} Online</span>
+</div>
 """, unsafe_allow_html=True)
 
 if os.path.exists("logo_custom.png"):
