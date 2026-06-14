@@ -2,25 +2,34 @@ import streamlit as st
 import pandas as pd
 import os
 import re
+import time
 import gspread
 from google.oauth2 import service_account
 
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
-# --- CONTATORE UTENTI ONLINE (SESSIONI ATTIVE) ---
-# Inizializziamo il contatore globale se non esiste
-if "utenti_connessi" not in st.session_state:
-    # Usiamo un trucco per incrementare un contatore condiviso nell'istanza del server
-    if not hasattr(st, "_conteggio_globale_utenti"):
-        st._conteggio_globale_utenti = 0
-    st._conteggio_globale_utenti += 1
-    st.session_state["utenti_connessi"] = True
+# --- CONTATORE UTENTI ONLINE PRECISO E PULITO ---
+if not hasattr(st, "_registro_attivita_utenti"):
+    st._registro_attivita_utenti = {}
 
-# Recuperiamo il numero attuale
-utenti_online = getattr(st, "_conteggio_globale_utenti", 1)
-# Sicurezza per evitare numeri negativi o zero se qualcosa fa i capricci
-if utenti_online < 1: utenti_online = 1
+# Usiamo l'ID della sessione corrente come chiave univoca per questo browser
+ctx = st.runtime.scriptrunner.script_run_context.get_script_run_context()
+if ctx:
+    id_sessione = ctx.session_id
+    # Aggiorna l'orario di ultima attività per questo utente
+    st._registro_attivita_utenti[id_sessione] = time.time()
+
+# Pulizia: teniamo solo gli utenti che si sono mossi negli ultimi 5 minuti (300 secondi)
+ora_attuale = time.time()
+st._registro_attivita_utenti = {
+    sid: t for sid, t in st._registro_attivita_utenti.items() if ora_attuale - t < 300
+}
+
+# Il numero reale di utenti attivi è il totale delle sessioni rimaste nel registro
+utenti_online = len(st._registro_attivita_utenti)
+if utenti_online < 1: 
+    utenti_online = 1
 
 # --- GESTIONE RESET TRAMITE PARAMETRI URL (Per il tasto HOME in basso) ---
 if "reset" in st.query_params:
