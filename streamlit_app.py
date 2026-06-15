@@ -12,8 +12,6 @@ st.set_page_config(page_title="Iron & Rubber", layout="centered")
 SC_PROJECT = "13297832"    
 SC_SECURITY = "54bb43fa"  
 
-# Generiamo un numero iniziale per la grafica, da adesso il tracciamento reale
-# gira in background inviando i dati precisi alla tua bacheca Statcounter.
 if "fake_online" not in st.session_state:
     import random
     st.session_state["fake_online"] = random.randint(1, 3)
@@ -31,6 +29,8 @@ if "sel_regione" not in st.session_state:
     st.session_state["sel_regione"] = "Tutte"
 if "sel_mese" not in st.session_state:
     st.session_state["sel_mese"] = "Tutte"
+if "evento_inviato" not in st.session_state:
+    st.session_state["evento_inviato"] = False
 
 # --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
@@ -99,7 +99,6 @@ st.markdown(f"""
 #MainMenu, footer, header {{visibility: hidden !important;}}
 .block-container {{ padding-top: 2rem !important; padding-bottom: 7rem !important; }}
 
-/* --- STILE DEL MICRO CONTATORE IN ALTO A DESTRA --- */
 .online-counter {{
     position: absolute;
     top: -10px;
@@ -183,6 +182,18 @@ div[data-baseweb="popover"] li {{
     font-family: 'Special Elite', cursive !important;
     font-size: 0.85rem !important;
 }}
+
+/* Stile per il banner di notifica arancione e nero */
+.messaggio-successo {{
+    background-color: #1f2124;
+    border: 2px solid #ff9100;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    color: white;
+    font-family: 'Special Elite', cursive;
+    margin-bottom: 20px;
+}}
 </style>
 
 <div class="online-counter">
@@ -210,7 +221,15 @@ if gc is None:
 else:
     try:
         foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
+        # Scheda principale (online)
         scheda = foglio_di_calcolo.get_worksheet(0)
+        # Seconda scheda (da verificare)
+        try:
+            scheda_da_verificare = foglio_di_calcolo.worksheet("da verificare")
+        except:
+            # Se ti sei dimenticato di crearla, la crea l'app in automatico
+            scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows="100", cols="20")
+            scheda_da_verificare.append_row(["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"])
         
         colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
         
@@ -224,20 +243,33 @@ else:
         else:
             df = pd.DataFrame(columns=colonne_esatte)
 
-        # --- FORM AGGIUNGI EVENTO ---
+        # --- FORM AGGIUNGI EVENTO CON APPROVAZIONE ---
         with st.expander("➕ AGGIUNGI EVENTO"):
-            with st.form("add_form", clear_on_submit=True):
-                n = st.text_input("Nome Evento")
-                d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
-                l = st.text_input("Luogo (Città, Via, ecc.)")
-                reg_scelta = st.selectbox("Seleziona Regione", regioni_italia, key="add_regione_form")
-                i = st.text_area("Info")
-                url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
-             
-                if st.form_submit_button("SALVA"):
-                    path_finale = url_inserito.strip()
-                    scheda.append_row([n, d, l, reg_scelta, i, path_finale, 0])
+            if st.session_state["evento_inviato"]:
+                st.markdown("""
+                <div class='messaggio-successo'>
+                    🔥 Grazie per la tua segnalazione!<br>
+                    Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button("Aggiungi un altro evento"):
+                    st.session_state["evento_inviato"] = False
                     st.rerun()
+            else:
+                with st.form("add_form", clear_on_submit=True):
+                    n = st.text_input("Nome Evento")
+                    d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
+                    l = st.text_input("Luogo (Città, Via, ecc.)")
+                    reg_scelta = st.selectbox("Seleziona Regione", regioni_italia, key="add_regione_form")
+                    i = st.text_area("Info")
+                    url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
+                 
+                    if st.form_submit_button("SALVA"):
+                        path_finale = url_inserito.strip()
+                        # SALVA NELLA SCHEDA "DA VERIFICARE" INVECE CHE ONLINE!
+                        scheda_da_verificare.append_row([n, d, l, reg_scelta, i, path_finale, 0])
+                        st.session_state["evento_inviato"] = True
+                        st.rerun()
 
         # --- TITOLO SEZIONE ---
         st.markdown("<br>", unsafe_allow_html=True)
