@@ -180,7 +180,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     font-size: 0.85rem !important;
 }}
 
-/* Stile per le card dei MotoClub */
+/* Stile per le card dei MotoClub avanzate con Logo Interno */
 .card-mc {{
     background-color: #1f2124;
     border: 2px solid #ff9100;
@@ -188,27 +188,47 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     padding: 15px;
     margin-bottom: 20px;
     color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }}
 .titolo-mc {{
     color: #ff9100;
     font-family: 'Special Elite', cursive;
     font-size: 1.3rem;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }}
 .citta-mc {{
     color: #00ffcc;
     font-size: 0.9rem;
-    margin-bottom: 10px;
+    font-family: 'Special Elite', cursive;
+    margin-bottom: 5px;
+}}
+.info-mc {{
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin-bottom: 5px;
+}}
+.logo-container-mc {{
+    text-align: center;
+    margin-top: 5px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255, 145, 0, 0.3);
+}}
+.logo-standard-mc {{
+    width: 130px !important;
+    height: 130px !important;
+    object-fit: contain !important;
+    border-radius: 5px;
+    background-color: transparent;
 }}
 </style>
 
-<!-- Widget Grafico Contatore -->
 <div class="online-counter">
     <span class="dot-online"></span>
     <span>{utenti_online} Online</span>
 </div>
 
-<!-- Codice Invisibile di Tracciamento Realtime Statcounter -->
 <script type="text/javascript">
 var sc_project={SC_PROJECT}; 
 var sc_invisible=1; 
@@ -292,7 +312,7 @@ else:
                 oggi = pd.Timestamp.now().normalize()
                 eventi_passati = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]
                 if not eventi_passati.empty:
-                    eventi_passati = eventos_passati.sort_values(by='GSheet_Row', ascending=False)
+                    eventi_passati = eventi_passati.sort_values(by='GSheet_Row', ascending=False)
                     for _, riga_passata in eventi_passati.iterrows():
                         scheda.delete_rows(int(riga_passata['GSheet_Row']))
                     st.rerun()
@@ -357,11 +377,11 @@ else:
                 st.info("Il database su Google Sheets è vuoto.")
 
         # =========================================================
-        # SCHERMATA 2: PAGINA MOTOCLUB (NUOVA!)
+        # SCHERMATA 2: PAGINA MOTOCLUB (AGGIORNATA CON LOGHI INTERNI)
         # =========================================================
         elif st.session_state["page"] == "mc":
-            st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>🏍️ I MOTO CLUB</h3>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: white; font-size:0.9rem;'>Scopri i club, le scuderie e i gruppi del territorio.</p><br>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Dove la passione diventa fratellanza.»</p><br>", unsafe_allow_html=True)
             
             try:
                 scheda_mc = foglio_di_calcolo.worksheet("motoclub")
@@ -373,22 +393,27 @@ else:
 
             if len(dati_mc) > 1:
                 for row_mc in dati_mc[1:]:
-                    # Preveniamo errori se mancano colonne compilate
                     row_mc = (row_mc + [""] * 4)[:4]
                     nome_mc, citta_mc, info_mc, logo_mc = row_mc
                     
-                    # Generiamo la scheda grafica del MotoClub
+                    # Costruiamo il blocco dell'immagine se presente un link valido
+                    html_immagine = ""
+                    if logo_mc.strip().startswith("http"):
+                        html_immagine = f"""
+                        <div class="logo-container-mc">
+                            <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
+                        </div>
+                        """
+                    
+                    # Generiamo l'intera scheda arancione contenente tutto (Titolo col fulmine, Città, Info e Logo)
                     st.markdown(f"""
                     <div class="card-mc">
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
-                        <p style="margin-bottom:10px;">{info_mc}</p>
+                        <div class="info-mc">{info_mc}</div>
+                        {html_immagine}
                     </div>
                     """, unsafe_allow_html=True)
-                    
-                    if logo_mc.strip().startswith("http"):
-                        st.image(logo_mc.strip(), width=150)
-                    st.markdown("<br>", unsafe_allow_html=True)
             else:
                 st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
 
@@ -420,7 +445,7 @@ else:
     except Exception as e:
         st.error(f"Errore generale: {e}")
 
-# --- 5. MENU FISSO IN BASSO INTERATTIVO AGGIORNATO ---
+# --- 5. MENU FISSO IN BASSO INTERATTIVO ---
 st.markdown("""
 <div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
     <a href='?menu=home' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
