@@ -224,11 +224,13 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 }}
 </style>
 
+<!-- Widget Grafico Contatore -->
 <div class="online-counter">
     <span class="dot-online"></span>
     <span>{utenti_online} Online</span>
 </div>
 
+<!-- Codice Invisibile di Tracciamento Realtime Statcounter -->
 <script type="text/javascript">
 var sc_project={SC_PROJECT}; 
 var sc_invisible=1; 
@@ -377,7 +379,7 @@ else:
                 st.info("Il database su Google Sheets è vuoto.")
 
         # =========================================================
-        # SCHERMATA 2: PAGINA MOTOCLUB (AGGIORNATA CON LOGHI INTERNI)
+        # SCHERMATA 2: PAGINA MOTOCLUB (CORRETTA!)
         # =========================================================
         elif st.session_state["page"] == "mc":
             st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
@@ -405,15 +407,15 @@ else:
                         </div>
                         """
                     
-                    # Generiamo l'intera scheda arancione contenente tutto (Titolo col fulmine, Città, Info e Logo)
-                    st.markdown(f"""
+                    # CORREZIONE CRITICA: Usiamo st.html() invece di st.markdown() per renderizzare l'immagine dentro la card senza blocchi di sicurezza
+                    st.html(f"""
                     <div class="card-mc">
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
                         <div class="info-mc">{info_mc}</div>
                         {html_immagine}
                     </div>
-                    """, unsafe_allow_html=True)
+                    """)
             else:
                 st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
 
