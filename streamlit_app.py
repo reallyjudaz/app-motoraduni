@@ -180,7 +180,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     font-size: 0.85rem !important;
 }}
 
-/* Stile per le card dei MotoClub avanzate con Logo Interno */
+/* Stile per le card dei MotoClub */
 .card-mc {{
     background-color: #1f2124;
     border: 2px solid #ff9100;
@@ -223,19 +223,18 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     background-color: transparent;
 }}
 
-/* Stile per rendere interattiva e zoomabile la locandina */
+/* --- SISTEMA LIGHTBOX NATIVO PER REALE TUTTO SCHERMO --- */
 .locandina-cliccabile {{
     width: 100%;
     max-width: 100%;
     height: auto;
     border-radius: 6px;
     border: 1px solid rgba(255, 145, 0, 0.4);
-    transition: transform 0.2s ease, border-color 0.2s ease;
-    cursor: zoom-in;
+    cursor: pointer;
+    transition: transform 0.2s;
 }}
 .locandina-cliccabile:hover {{
     transform: scale(1.01);
-    border-color: #ff9100;
 }}
 .testo-aiuto-zoom {{
     color: #8a8d93;
@@ -244,6 +243,60 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     margin-top: -8px;
     margin-bottom: 15px;
     text-align: center;
+}}
+
+/* Finestra sovrapposta (Lightbox) */
+.lightbox-target {{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 11, 0.95);
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    z-index: 100000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.25s ease;
+}}
+/* Quando attivato dal link HTML */
+.lightbox-target:target {{
+    width: 100%;
+    opacity: 1;
+    bottom: 0;
+    right: 0;
+}}
+/* Immagine dentro il tutto schermo */
+.lightbox-target img {{
+    max-width: 92%;
+    max-height: 78vh;
+    object-fit: contain;
+    border: 2px solid #ff9100;
+    border-radius: 8px;
+    box-shadow: 0px 0px 20px rgba(255, 145, 0, 0.4);
+}}
+/* Pulsante BACK / CHIUDI personalizzato */
+.lightbox-close-btn {{
+    margin-top: 20px;
+    background-color: #ff9100 !important;
+    color: black !important;
+    font-family: 'Special Elite', cursive !important;
+    font-weight: bold !important;
+    text-decoration: none !important;
+    padding: 10px 35px;
+    border-radius: 5px;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    transition: background 0.2s;
+    text-align: center;
+}}
+.lightbox-close-btn:hover {{
+    background-color: #e07f00 !important;
 }}
 </style>
 
@@ -377,12 +430,18 @@ else:
                             
                             img_path = str(row.get('Locandina', '')).strip()
                             if img_path.startswith("http"):
-                                # TRUCCO ZOOM: Rendering HTML per rendere l'immagine un link cliccabile a pieno schermo
+                                # NUOVO SISTEMA DI ZOOm CINEMA CON TASTO DI CHIUSURA INTERNO DI TIPO "BACK"
                                 st.html(f"""
-                                <a href="{img_path}" target="_blank" title="Clicca per ingrandire a tutto schermo">
-                                    <img src="{img_path}" class="locandina-cliccabile">
+                                <a href="#zoom_{idx}">
+                                    <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
                                 </a>
-                                <div class="testo-aiuto-zoom">🔍 Tocca l'immagine per aprirla a tutto schermo e zoomare</div>
+                                <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla a schermo intero</div>
+                                
+                                <!-- Struttura del tutto schermo sovrapposto (Lightbox) -->
+                                <div class="lightbox-target" id="zoom_{idx}">
+                                    <img src="{img_path}" alt="Zoom Locandina">
+                                    <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
+                                </div>
                                 """)
 
                             pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
@@ -453,9 +512,14 @@ else:
                     if logo_mc.strip().startswith("http"):
                         html_immagine = f"""
                         <div class="logo-container-mc">
-                            <a href="{logo_mc.strip()}" target="_blank">
+                            <a href="#zoom_mc_{nome_mc.replace(' ', '_')}">
                                 <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
                             </a>
+                        </div>
+                        <!-- Lightbox anche per i Loghi dei Club -->
+                        <div class="lightbox-target" id="zoom_mc_{nome_mc.replace(' ', '_')}">
+                            <img src="{logo_mc.strip()}" alt="Zoom Logo Club">
+                            <a class="lightbox-close-btn" href="#_">← TORNA AI CLUB</a>
                         </div>
                         """
                     
