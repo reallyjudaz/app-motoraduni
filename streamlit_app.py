@@ -4,6 +4,7 @@ import os
 import re
 import gspread
 from google.oauth2 import service_account
+import urllib.parse
 
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
@@ -223,6 +224,20 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     background-color: transparent;
 }}
 
+/* Stile link Maps */
+.maps-link {{
+    text-decoration: none !important;
+    font-size: 1.1rem;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    transition: transform 0.2s;
+}}
+.maps-link:hover {{
+    transform: scale(1.2);
+}}
+
 /* --- SISTEMA LIGHTBOX NATIVO PER REALE TUTTO SCHERMO --- */
 .locandina-cliccabile {{
     width: 100%;
@@ -263,14 +278,12 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     justify-content: center;
     transition: opacity 0.25s ease;
 }}
-/* Quando attivato dal link HTML */
 .lightbox-target:target {{
     width: 100%;
     opacity: 1;
     bottom: 0;
     right: 0;
 }}
-/* Immagine dentro il tutto schermo */
 .lightbox-target img {{
     max-width: 92%;
     max-height: 78vh;
@@ -279,7 +292,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     border-radius: 8px;
     box-shadow: 0px 0px 20px rgba(255, 145, 0, 0.4);
 }}
-/* Pulsante BACK / CHIUDI personalizzato */
 .lightbox-close-btn {{
     margin-top: 20px;
     background-color: #ff9100 !important;
@@ -425,19 +437,22 @@ else:
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                         
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
-                            st.write(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']})")
+                            # --- CREAZIONE E RENDERING DEL LINK GOOGLE MAPS ---
+                            stringa_luogo = f"{row['Luogo']} {row['Regione']}"
+                            stringa_safe = urllib.parse.quote_plus(stringa_luogo)
+                            url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
+                            
+                            st.markdown(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']}) <a href='{url_maps}' target='_blank' class='maps-link' title='Apri Navigatore Maps'>🗺️</a>", unsafe_allow_html=True)
                             st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
                             
                             img_path = str(row.get('Locandina', '')).strip()
                             if img_path.startswith("http"):
-                                # NUOVO SISTEMA DI ZOOm CINEMA CON TASTO DI CHIUSURA INTERNO DI TIPO "BACK"
                                 st.html(f"""
                                 <a href="#zoom_{idx}">
                                     <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
                                 </a>
                                 <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla a schermo intero</div>
                                 
-                                <!-- Struttura del tutto schermo sovrapposto (Lightbox) -->
                                 <div class="lightbox-target" id="zoom_{idx}">
                                     <img src="{img_path}" alt="Zoom Locandina">
                                     <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
@@ -489,11 +504,11 @@ else:
                 st.info("Il database su Google Sheets è vuoto.")
 
         # =========================================================
-        # SCHERMATA 2: PAGINA MOTOCLUB (CORRETTA!)
+        # SCHERMATA 2: PAGINA MOTOCLUB
         # =========================================================
         elif st.session_state["page"] == "mc":
             st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Dove la passione diventa fratellanza.»</p><br>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Where passion becomes brotherhood.»</p><br>", unsafe_allow_html=True)
             
             try:
                 scheda_mc = foglio_di_calcolo.worksheet("motoclub")
@@ -516,7 +531,6 @@ else:
                                 <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
                             </a>
                         </div>
-                        <!-- Lightbox anche per i Loghi dei Club -->
                         <div class="lightbox-target" id="zoom_mc_{nome_mc.replace(' ', '_')}">
                             <img src="{logo_mc.strip()}" alt="Zoom Logo Club">
                             <a class="lightbox-close-btn" href="#_">← TORNA AI CLUB</a>
