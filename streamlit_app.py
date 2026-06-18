@@ -146,7 +146,6 @@ st.markdown(f"""
     color: white !important; 
 }}
 
-/* Blocca lo sfondo scuro sull'intestazione in qualsiasi stato (normale, hover, focus, attivo) */
 div[data-testid="stExpander"] details summary, 
 div[data-testid="stExpander"] details summary:hover, 
 div[data-testid="stExpander"] details summary:focus,
@@ -156,7 +155,6 @@ div[data-testid="stExpander"] details[open] summary {{
     color: white !important;
 }}
 
-/* Assicura che il testo del titolo sia sempre leggibile e colorato correttamente */
 .streamlit-expanderHeader {{ 
     color: #ff9100 !important; 
     font-weight: bold !important; 
@@ -207,7 +205,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     font-size: 0.85rem !important;
 }}
 
-/* Stile per le card dei MotoClub */
 .card-mc {{
     background-color: #1f2124;
     border: 2px solid #ff9100;
@@ -250,7 +247,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     background-color: transparent;
 }}
 
-/* Stile link Maps */
 .maps-link {{
     text-decoration: none !important;
     font-size: 1.1rem;
@@ -264,7 +260,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     transform: scale(1.2);
 }}
 
-/* --- SISTEMA LIGHTBOX NATIVO PER REALE TUTTO SCHERMO --- */
 .locandina-cliccabile {{
     width: 100%;
     max-width: 100%;
@@ -286,7 +281,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
-/* Finestra sovrapposta (Lightbox) */
 .lightbox-target {{
     position: fixed;
     top: 0;
@@ -338,13 +332,11 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 }}
 </style>
 
-<!-- Widget Grafico Contatore -->
 <div class="online-counter">
     <span class="dot-online"></span>
     <span>{utenti_online} Online</span>
 </div>
 
-<!-- Codice Invisibile di Tracciamento Realtime Statcounter -->
 <script type="text/javascript">
 var sc_project={SC_PROJECT}; 
 var sc_invisible=1; 
@@ -427,13 +419,23 @@ else:
                 df['Data_Date'] = df['Data'].apply(parsing_data_biker)
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
+                # =========================================================
+                # CORREZIONE SISTEMA DI CANCELLAZIONE AUTOMATICA SICURA
+                # =========================================================
                 oggi = pd.Timestamp.now().normalize()
-                eventi_passati = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]
-                if not eventi_passati.empty:
-                    eventi_passati = eventi_passati.sort_values(by='GSheet_Row', ascending=False)
-                    for _, riga_passata in eventi_passati.iterrows():
-                        scheda.delete_rows(int(riga_passata['GSheet_Row']))
-                    st.rerun()
+                # Trova tutte le righe associate a eventi passati
+                righe_da_eliminare = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]['GSheet_Row'].tolist()
+                
+                if righe_da_eliminare:
+                    # Ordiniamo dal numero di riga più alto a quello più basso per non sballare gli indici durante l'eliminazione
+                    righe_da_eliminare.sort(reverse=True)
+                    for riga in righe_da_eliminare:
+                        scheda.delete_rows(int(riga))
+                    
+                    # Rimuoviamo temporaneamente i dati eliminati anche dal DataFrame locale 
+                    # così la pagina si aggiorna ISTANTANEAMENTE senza bisogno del pericoloso st.rerun()
+                    df = df[~df['GSheet_Row'].isin(righe_da_eliminare)]
+                # =========================================================
 
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
                 df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
@@ -492,10 +494,10 @@ else:
                                 new_data = st.text_input(f"Modifica Data (Testo)", value=str(row.get('Data', '')), key=f"data_{idx}")
                                 new_luogo = st.text_input(f"Modifica Luogo", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
                                 
-                                regione_attuale = str(row.get('Regione', 'Abruzzo')).strip()
+                                r_attuale = str(row.get('Regione', 'Abruzzo')).strip()
                                 idx_regione = 0
-                                if regione_attuale in regioni_italia:
-                                    idx_regione = regioni_italia.index(regione_attuale)
+                                if r_attuale in regioni_italia:
+                                    idx_regione = regioni_italia.index(r_attuale)
                                 new_regione = st.selectbox(f"Modifica Regione", regioni_italia, index=idx_regione, key=f"reg_{idx}")
                                 
                                 new_info = st.text_area(f"Modifica Info / Note", value=str(row.get('Dettagli / Note', '')), key=f"info_{idx}")
@@ -514,15 +516,15 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                        conteggio = int(row['Partecipanti'])
-                        label = f"CI VADO 🔥 {conteggio}"
-                        if ha_gia_votato(chiave_voto):
-                            st.button(label, key=f"btn_{idx}", disabled=True)
-                        else:
-                            if st.button(label, key=f"btn_{idx}"):
-                                scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                registra_voto(chiave_voto)
-                                st.rerun()
+                            conteggio = int(row['Partecipanti'])
+                            label = f"CI VADO 🔥 {conteggio}"
+                            if ha_gia_votato(chiave_voto):
+                                st.button(label, key=f"btn_{idx}", disabled=True)
+                            else:
+                                if st.button(label, key=f"btn_{idx}"):
+                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                    registra_voto(chiave_voto)
+                                    st.rerun()
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
@@ -567,7 +569,7 @@ else:
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
                         <div class="info-mc">{info_mc}</div>
-                        {html_immagine}
+                        {{html_immagine}}
                     </div>
                     """)
             else:
