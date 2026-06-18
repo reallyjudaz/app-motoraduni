@@ -26,7 +26,7 @@ if "page" not in st.session_state:
 if "menu" in st.query_params:
     scelta_menu = st.query_params["menu"]
     if scelta_menu in ["home", "mc", "admin"]:
-        st.session_state["page"] = scelta_menu
+        st.session_state["page"] = choix_menu
     st.query_params.clear()
     st.rerun()
 
@@ -37,6 +37,10 @@ if "sel_mese" not in st.session_state:
     st.session_state["sel_mese"] = "Tutte"
 if "evento_inviato" not in st.session_state:
     st.session_state["evento_inviato"] = False
+
+# Stato per tracciare quale tendina di evento è aperta (Accordion)
+if "expander_aperto" not in st.session_state:
+    st.session_state["expander_aperto"] = None
 
 # --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
@@ -462,7 +466,18 @@ else:
                         riga_foglio_google = int(row['GSheet_Row'])
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                         
-                        with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
+                        # --- LOGICA ACCORDION (UN SOLO EVENTO APERTO ALLA VOLTA) ---
+                        # Controlliamo se questa specifica tendina deve essere espansa
+                        is_expanded = (st.session_state["expander_aperto"] == chiave_voto)
+                        
+                        # Definiamo la tendina
+                        with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}", expanded=is_expanded):
+                            
+                            # Se la tendina viene aperta ma lo stato non corrisponde, aggiorniamo la memoria e forziamo il rerun
+                            if st.session_state["expander_aperto"] != chiave_voto:
+                                st.session_state["expander_aperto"] = chiave_voto
+                                st.rerun()
+                                
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
