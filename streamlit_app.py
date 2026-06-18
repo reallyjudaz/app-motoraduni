@@ -38,11 +38,7 @@ if "sel_mese" not in st.session_state:
 if "evento_inviato" not in st.session_state:
     st.session_state["evento_inviato"] = False
 
-# Stato per tracciare quale expander di evento è attualmente aperto
-if "evento_aperto_id" not in st.session_state:
-    st.session_state["evento_aperto_id"] = None
-
-# --- 2. CONNESSI A GOOGLE SHEETS (Secrets con Cache protetta) ---
+# --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
 def inizializza_connessione_google():
     try:
@@ -60,30 +56,6 @@ def inizializza_connessione_google():
 
 gc = inizializza_connessione_google()
 NOME_DEL_FOGLIO = "app motoraduni"
-
-# FUNZIONE CON CACHE DI 15 SECONDI PER EVITARE L'ERRORE 429 QUOTA EXCEEDED
-@st.cache_data(ttl=15)
-def leggi_dati_da_sheet(nome_foglio, indice_scheda=0):
-    if gc is None:
-        return []
-    try:
-        sh = gc.open(nome_foglio)
-        scheda = sh.get_worksheet(indice_scheda)
-        return scheda.get_all_values()
-    except:
-        return []
-
-# FUNZIONE PER LEGGERE LA SCHEDA MOTOCLUB CON CACHE
-@st.cache_data(ttl=30)
-def leggi_motoclub_da_sheet(nome_foglio):
-    if gc is None:
-        return []
-    try:
-        sh = gc.open(nome_foglio)
-        scheda_mc = sh.worksheet("motoclub")
-        return scheda_mc.get_all_values()
-    except:
-        return []
 
 # --- LISTA REGIONI STRUTTURATA ---
 regioni_italia = ["Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
@@ -172,9 +144,9 @@ st.markdown(f"""
     border: 2px solid #ff9100 !important; 
     border-radius: 10px !important; 
     color: white !important; 
-    margin-bottom: 12px !important;
 }}
 
+/* Blocca lo sfondo scuro sull'intestazione in qualsiasi stato (normale, hover, focus, attivo) */
 div[data-testid="stExpander"] details summary, 
 div[data-testid="stExpander"] details summary:hover, 
 div[data-testid="stExpander"] details summary:focus,
@@ -184,6 +156,7 @@ div[data-testid="stExpander"] details[open] summary {{
     color: white !important;
 }}
 
+/* Assicura che il testo del titolo sia sempre leggibile e colorato correttamente */
 .streamlit-expanderHeader {{ 
     color: #ff9100 !important; 
     font-weight: bold !important; 
@@ -192,7 +165,6 @@ div[data-testid="stExpander"] details[open] summary {{
 }}
 div[data-testid="stExpander"] details summary p {{
     color: white !important;
-    font-family: 'Special Elite', cursive !important;
 }}
 
 div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
@@ -392,14 +364,23 @@ if gc is None:
     st.error("Errore critico nella connessione a Google Cloud.")
 else:
     try:
+        foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
+        
         # =========================================================
         # SCHERMATA 1: HOME (LISTA MOTORADUNI)
         # =========================================================
         if st.session_state["page"] == "home":
-            tutti_i_dati = leggi_dati_da_sheet(NOME_DEL_FOGLIO, 0)
+            scheda = foglio_di_calcolo.get_worksheet(0)
+            
+            try:
+                scheda_da_verificare = foglio_di_calcolo.worksheet("da verificare")
+            except:
+                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows="100", cols="20")
+                scheda_da_verificare.append_row(["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"])
             
             colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
             
+            tutti_i_dati = scheda.get_all_values()
             if tutti_i_dati and len(tutti_i_dati) > 1:
                 righe_pulite = []
                 for riga in tutti_i_dati[1:]:
@@ -433,16 +414,9 @@ else:
                         url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
                      
                         if st.form_submit_button("SALVA"):
-                            sh = gc.open(NOME_DEL_FOGLIO)
-                            try:
-                                scheda_da_verificare = sh.worksheet("da verificare")
-                            except:
-                                scheda_da_verificare = sh.add_worksheet(title="da verificare", rows="100", cols="20")
-                            
                             path_finale = url_inserito.strip()
                             scheda_da_verificare.append_row([n, d, l, reg_scelta, i, path_finale, 0])
                             st.session_state["evento_inviato"] = True
-                            st.cache_data.clear()
                             st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
@@ -456,12 +430,9 @@ else:
                 oggi = pd.Timestamp.now().normalize()
                 eventi_passati = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]
                 if not eventi_passati.empty:
-                    sh = gc.open(NOME_DEL_FOGLIO)
-                    scheda = sh.get_worksheet(0)
                     eventi_passati = eventi_passati.sort_values(by='GSheet_Row', ascending=False)
                     for _, riga_passata in eventi_passati.iterrows():
                         scheda.delete_rows(int(riga_passata['GSheet_Row']))
-                    st.cache_data.clear()
                     st.rerun()
 
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
@@ -487,26 +458,11 @@ else:
                     ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
 
                 if not ifDoc.empty:
-                    # --- CICLO DEGLI EVENTI IN ACCORDION ESCLUSIVO NATIVO ---
                     for idx, row in ifDoc.iterrows():
                         riga_foglio_google = int(row['GSheet_Row'])
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                         
-                        # Generiamo un ID univoco per questo specifico evento
-                        id_evento_corrente = f"exp_{riga_foglio_google}"
-                        
-                        # Determina se questo expander deve essere renderizzato come aperto
-                        stato_aperto = (st.session_state["evento_aperto_id"] == id_evento_corrente)
-
-                        titolo_expander = f"{row['Data']} - {row['Nome Evento / Raduno']}"
-                        
-                        # Creazione dell'expander classico che rispetta lo stato globale
-                        with st.expander(titolo_expander, expanded=stato_aperto):
-                            # Se l'utente clicca e lo apre, ma nello stato non risulta lui il file principale, aggiorniamo lo stato
-                            if st.session_state["evento_aperto_id"] != id_evento_corrente:
-                                st.session_state["evento_aperto_id"] = id_evento_corrente
-                                st.rerun()
-
+                        with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
@@ -536,46 +492,37 @@ else:
                                 new_data = st.text_input(f"Modifica Data (Testo)", value=str(row.get('Data', '')), key=f"data_{idx}")
                                 new_luogo = st.text_input(f"Modifica Luogo", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
                                 
-                                Informazione_regione = str(row.get('Regione', 'Abruzzo')).strip()
+                                regione_attuale = str(row.get('Regione', 'Abruzzo')).strip()
                                 idx_regione = 0
-                                if Informazione_regione in regioni_italia:
-                                    idx_regione = regioni_italia.index(Informazione_regione)
+                                if regione_attuale in regioni_italia:
+                                    idx_regione = regioni_italia.index(regione_attuale)
                                 new_regione = st.selectbox(f"Modifica Regione", regioni_italia, index=idx_regione, key=f"reg_{idx}")
                                 
                                 new_info = st.text_area(f"Modifica Info / Note", value=str(row.get('Dettagli / Note', '')), key=f"info_{idx}")
                                 new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
                                 
                                 if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                    sh = gc.open(NOME_DEL_FOGLIO)
-                                    scheda = sh.get_worksheet(0)
                                     scheda.update_cell(riga_foglio_google, 1, new_title)
                                     scheda.update_cell(riga_foglio_google, 2, new_data)
                                     scheda.update_cell(riga_foglio_google, 3, new_luogo)
                                     scheda.update_cell(riga_foglio_google, 4, new_regione)
                                     scheda.update_cell(riga_foglio_google, 5, new_info)
                                     scheda.update_cell(riga_foglio_google, 6, new_locandina.strip())
-                                    st.cache_data.clear()
                                     st.rerun()
                                     
                                 if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
-                                    sh = gc.open(NOME_DEL_FOGLIO)
-                                    scheda = sh.get_worksheet(0)
                                     scheda.delete_rows(riga_foglio_google)
-                                    st.cache_data.clear()
                                     st.rerun()
 
-                            conteggio = int(row['Partecipanti'])
-                            label = f"CI VADO 🔥 {conteggio}"
-                            if ha_gia_votato(chiave_voto):
-                                st.button(label, key=f"btn_{idx}", disabled=True)
-                            else:
-                                if st.button(label, key=f"btn_{idx}"):
-                                    sh = gc.open(NOME_DEL_FOGLIO)
-                                    scheda = sh.get_worksheet(0)
-                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                    registra_voto(chiave_voto)
-                                    st.cache_data.clear()
-                                    st.rerun()
+                        conteggio = int(row['Partecipanti'])
+                        label = f"CI VADO 🔥 {conteggio}"
+                        if ha_gia_votato(chiave_voto):
+                            st.button(label, key=f"btn_{idx}", disabled=True)
+                        else:
+                            if st.button(label, key=f"btn_{idx}"):
+                                scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                registra_voto(chiave_voto)
+                                st.rerun()
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
@@ -588,7 +535,13 @@ else:
             st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Where passion becomes brotherhood.»</p><br>", unsafe_allow_html=True)
             
-            dati_mc = leggi_motoclub_da_sheet(NOME_DEL_FOGLIO)
+            try:
+                scheda_mc = foglio_di_calcolo.worksheet("motoclub")
+                dati_mc = scheda_mc.get_all_values()
+            except:
+                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows="100", cols="10")
+                scheda_mc.append_row(["Nome MotoClub", "Città", "Descrizione / Info", "Logo"])
+                dati_mc = [["Nome MotoClub", "Città", "Descrizione / Info", "Logo"]]
 
             if len(dati_mc) > 1:
                 for row_mc in dati_mc[1:]:
@@ -618,12 +571,13 @@ else:
                     </div>
                     """)
             else:
-                st.info("Nessun MotoClub registrato al momento.")
+                st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
 
         # =========================================================
         # SCHERMATA 3: ADMIN
         # =========================================================
         elif st.session_state["page"] == "admin":
+            scheda = foglio_di_calcolo.get_worksheet(0)
             st.markdown("<h3 style='color: #ff9100; font-family: \"Special Elite\", cursive; text-align: center;'>Pannello Admin</h3>", unsafe_allow_html=True)
             pass_admin = st.text_input("Inserisci Password Amministratore", type="password", key="password_principale_admin")
             
@@ -639,10 +593,7 @@ else:
                     
                     if st.form_submit_button("PUBBLICA DIRETTAMENTE ONLINE"):
                         if adm_n and adm_d:
-                            sh = gc.open(NOME_DEL_FOGLIO)
-                            scheda = sh.get_worksheet(0)
                             scheda.append_row([adm_n, adm_d, adm_l, adm_reg, adm_i, adm_url.strip(), 0])
-                            st.cache_data.clear()
                             st.success("🔥 Evento pubblicato istantaneamente sul database pubblico!")
                         else:
                             st.error("Nome e Data sono obbligatori!")
