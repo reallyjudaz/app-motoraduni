@@ -222,13 +222,38 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     border-radius: 5px;
     background-color: transparent;
 }}
+
+/* Stile per rendere interattiva e zoomabile la locandina */
+.locandina-cliccabile {{
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 145, 0, 0.4);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    cursor: zoom-in;
+}}
+.locandina-cliccabile:hover {{
+    transform: scale(1.01);
+    border-color: #ff9100;
+}}
+.testo-aiuto-zoom {{
+    color: #8a8d93;
+    font-size: 0.8rem;
+    font-family: 'Special Elite', cursive;
+    margin-top: -8px;
+    margin-bottom: 15px;
+    text-align: center;
+}}
 </style>
 
+<!-- Widget Grafico Contatore -->
 <div class="online-counter">
     <span class="dot-online"></span>
     <span>{utenti_online} Online</span>
 </div>
 
+<!-- Codice Invisibile di Tracciamento Realtime Statcounter -->
 <script type="text/javascript">
 var sc_project={SC_PROJECT}; 
 var sc_invisible=1; 
@@ -352,18 +377,22 @@ else:
                             
                             img_path = str(row.get('Locandina', '')).strip()
                             if img_path.startswith("http"):
-                                st.image(img_path, use_container_width=True)
+                                # TRUCCO ZOOM: Rendering HTML per rendere l'immagine un link cliccabile a pieno schermo
+                                st.html(f"""
+                                <a href="{img_path}" target="_blank" title="Clicca per ingrandire a tutto schermo">
+                                    <img src="{img_path}" class="locandina-cliccabile">
+                                </a>
+                                <div class="testo-aiuto-zoom">🔍 Tocca l'immagine per aprirla a tutto schermo e zoomare</div>
+                                """)
 
                             pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                             if pwd == "Judaz2026":
                                 st.markdown("<div style='color: #00ffcc; font-size: 0.9rem; font-weight: bold;'>⚙️ MODALITÀ MODIFICA ATTIVA</div>", unsafe_allow_html=True)
                                 
-                                # Campi per modificare TUTTI i dati dell'evento
                                 new_title = st.text_input(f"Modifica Titolo", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
                                 new_data = st.text_input(f"Modifica Data (Testo)", value=str(row.get('Data', '')), key=f"data_{idx}")
                                 new_luogo = st.text_input(f"Modifica Luogo", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
                                 
-                                # Calcolo indice regione attuale per il menu a tendina
                                 regione_attuale = str(row.get('Regione', 'Abruzzo')).strip()
                                 idx_regione = 0
                                 if regione_attuale in regioni_italia:
@@ -374,7 +403,6 @@ else:
                                 new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
                                 
                                 if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                    # Aggiorniamo tutte le celle della riga corrispondente su Google Sheets
                                     scheda.update_cell(riga_foglio_google, 1, new_title)
                                     scheda.update_cell(riga_foglio_google, 2, new_data)
                                     scheda.update_cell(riga_foglio_google, 3, new_luogo)
@@ -421,16 +449,16 @@ else:
                     row_mc = (row_mc + [""] * 4)[:4]
                     nome_mc, citta_mc, info_mc, logo_mc = row_mc
                     
-                    # Costruiamo il blocco dell'immagine se presente un link valido
                     html_immagine = ""
                     if logo_mc.strip().startswith("http"):
                         html_immagine = f"""
                         <div class="logo-container-mc">
-                            <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
+                            <a href="{logo_mc.strip()}" target="_blank">
+                                <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
+                            </a>
                         </div>
                         """
                     
-                    # CORREZIONE CRITICA: Usiamo st.html() invece di st.markdown() per renderizzare l'immagine dentro la card senza blocchi di sicurezza
                     st.html(f"""
                     <div class="card-mc">
                         <div class="titolo-mc">⚡ {nome_mc}</div>
