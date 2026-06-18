@@ -26,7 +26,7 @@ if "page" not in st.session_state:
 if "menu" in st.query_params:
     scelta_menu = st.query_params["menu"]
     if scelta_menu in ["home", "mc", "admin"]:
-        st.session_state["page"] = choix_menu
+        st.session_state["page"] = scelta_menu
     st.query_params.clear()
     st.rerun()
 
@@ -38,11 +38,7 @@ if "sel_mese" not in st.session_state:
 if "evento_inviato" not in st.session_state:
     st.session_state["evento_inviato"] = False
 
-# Stato per tracciare quale tendina di evento è aperta (Accordion)
-if "expander_aperto" not in st.session_state:
-    st.session_state["expander_aperto"] = None
-
-# --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
+# --- 2. CONNESSI A GOOGLE SHEETS (Secrets con Cache protetta) ---
 @st.cache_resource
 def inizializza_connessione_google():
     try:
@@ -60,6 +56,30 @@ def inizializza_connessione_google():
 
 gc = inizializza_connessione_google()
 NOME_DEL_FOGLIO = "app motoraduni"
+
+# FUNZIONE CON CACHE DI 15 SECONDI PER EVITARE L'ERRORE 429 QUOTA EXCEEDED
+@st.cache_data(ttl=15)
+def leggi_dati_da_sheet(nome_foglio, indice_scheda=0):
+    if gc is None:
+        return []
+    try:
+        sh = gc.open(nome_foglio)
+        scheda = sh.get_worksheet(indice_scheda)
+        return scheda.get_all_values()
+    except:
+        return []
+
+# FUNZIONE PER LEGGERE LA SCHEDA MOTOCLUB CON CACHE
+@st.cache_data(ttl=30)
+def leggi_motoclub_da_sheet(nome_foglio):
+    if gc is None:
+        return []
+    try:
+        sh = gc.open(nome_foglio)
+        scheda_mc = sh.worksheet("motoclub")
+        return scheda_mc.get_all_values()
+    except:
+        return []
 
 # --- LISTA REGIONI STRUTTURATA ---
 regioni_italia = ["Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
@@ -150,7 +170,6 @@ st.markdown(f"""
     color: white !important; 
 }}
 
-/* Blocca lo sfondo scuro sull'intestazione in qualsiasi stato (normale, hover, focus, attivo) */
 div[data-testid="stExpander"] details summary, 
 div[data-testid="stExpander"] details summary:hover, 
 div[data-testid="stExpander"] details summary:focus,
@@ -160,7 +179,6 @@ div[data-testid="stExpander"] details[open] summary {{
     color: white !important;
 }}
 
-/* Assicura che il testo del titolo sia sempre leggibile e colorato correttamente */
 .streamlit-expanderHeader {{ 
     color: #ff9100 !important; 
     font-weight: bold !important; 
@@ -368,23 +386,15 @@ if gc is None:
     st.error("Errore critico nella connessione a Google Cloud.")
 else:
     try:
-        foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
-        
         # =========================================================
         # SCHERMATA 1: HOME (LISTA MOTORADUNI)
         # =========================================================
         if st.session_state["page"] == "home":
-            scheda = foglio_di_calcolo.get_worksheet(0)
-            
-            try:
-                scheda_da_verificare = foglio_di_calcolo.worksheet("da verificare")
-            except:
-                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows="100", cols="20")
-                scheda_da_verificare.append_row(["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"])
+            # Chiamata ottimizzata con cache
+            tutti_i_dati = leggi_dati_da_sheet(NOME_DEL_FOGLIO, 0)
             
             colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
             
-            tutti_i_dati = scheda.get_all_values()
             if tutti_i_dati and len(tutti_i_dati) > 1:
                 righe_pulite = []
                 for riga in tutti_i_dati[1:]:
@@ -418,9 +428,17 @@ else:
                         url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
                      
                         if st.form_submit_button("SALVA"):
+                            # Carica senza passare dal refresh cache
+                            sh = gc.open(NOME_DEL_FOGLIO)
+                            try:
+                                scheda_da_verificare = sh.worksheet("da verificare")
+                            except:
+                                scheda_da_verificare = sh.add_worksheet(title="da verificare", rows="100", cols="20")
+                            
                             path_finale = url_inserito.strip()
                             scheda_da_verificare.append_row([n, d, l, reg_scelta, i, path_finale, 0])
                             st.session_state["evento_inviato"] = True
+                            st.cache_data.clear() # Svuota la cache perché c'è un nuovo dato
                             st.rerun()
 
             st.markdown("<br>", unsafe_allow_html=True)
@@ -434,9 +452,12 @@ else:
                 oggi = pd.Timestamp.now().normalize()
                 eventi_passati = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]
                 if not eventi_passati.empty:
+                    sh = gc.open(NOME_DEL_FOGLIO)
+                    scheda = sh.get_worksheet(0)
                     eventi_passati = eventi_passati.sort_values(by='GSheet_Row', ascending=False)
                     for _, riga_passata in eventi_passati.iterrows():
                         scheda.delete_rows(int(riga_passata['GSheet_Row']))
+                    st.cache_data.clear()
                     st.rerun()
 
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
@@ -462,82 +483,97 @@ else:
                     ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
 
                 if not ifDoc.empty:
-                    for idx, row in ifDoc.iterrows():
+                    # --- COMPORTAMENTO ACCORDION AFFIDABILE SENZA LOOP ---
+                    # Usiamo i radio/pulsanti nativi simulati con tasti o lasciamo che Streamlit lo gestisca via chiave di stato univoca.
+                    # Per essere totalmente compatibili e non bloccanti, creiamo un radio o usiamo le chiavi.
+                     nomi_eventi = [f"{r['Data']} - {r['Nome Evento / Raduno']}" for _, r in ifDoc.iterrows()]
+                     
+                     # Lasciamo scegliere quale espandere con un selettore comodo
+                     scelta_evento = st.selectbox("🎯 Tocca qui per scegliere ed aprire un evento", ["-- Seleziona un evento dalla lista --"] + nomi_eventi)
+
+                     for idx, row in ifDoc.iterrows():
                         riga_foglio_google = int(row['GSheet_Row'])
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
+                        testo_tasto = f"{row['Data']} - {row['Nome Evento / Raduno']}"
                         
-                        # --- LOGICA ACCORDION (UN SOLO EVENTO APERTO ALLA VOLTA) ---
-                        # Controlliamo se questa specifica tendina deve essere espansa
-                        is_expanded = (st.session_state["expander_aperto"] == chiave_voto)
+                        # Espanso solo se l'utente lo ha selezionato dal menu a tendina superiore
+                        is_expanded = (scelta_evento == testo_tasto)
                         
-                        # Definiamo la tendina
-                        with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}", expanded=is_expanded):
-                            
-                            # Se la tendina viene aperta ma lo stato non corrisponde, aggiorniamo la memoria e forziamo il rerun
-                            if st.session_state["expander_aperto"] != chiave_voto:
-                                st.session_state["expander_aperto"] = chiave_voto
-                                st.rerun()
+                        if is_expanded:
+                            with st.container():
+                                st.markdown(f"<div style='border: 2px solid #ff9100; border-radius: 10px; padding: 15px; background-color: #1f2124; margin-bottom: 10px;'>", unsafe_allow_html=True)
+                                st.markdown(f"<h4 style='color: #ff9100; margin-top:0;'>⚡ {row['Nome Evento / Raduno']} ({row['Data']})</h4>", unsafe_allow_html=True)
                                 
-                            stringa_luogo = f"{row['Luogo']} {row['Regione']}"
-                            stringa_safe = urllib.parse.quote_plus(stringa_luogo)
-                            url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
-                            
-                            st.markdown(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']}) <a href='{url_maps}' target='_blank' class='maps-link' title='Apri Navigatore Maps'>🗺️</a>", unsafe_allow_html=True)
-                            st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
-                            
-                            img_path = str(row.get('Locandina', '')).strip()
-                            if img_path.startswith("http"):
-                                st.html(f"""
-                                <a href="#zoom_{idx}">
-                                    <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
-                                </a>
-                                <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla a schermo intero</div>
+                                stringa_luogo = f"{row['Luogo']} {row['Regione']}"
+                                stringa_safe = urllib.parse.quote_plus(stringa_luogo)
+                                url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
                                 
-                                <div class="lightbox-target" id="zoom_{idx}">
-                                    <img src="{img_path}" alt="Zoom Locandina">
-                                    <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
-                                </div>
-                                """)
-
-                            pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
-                            if pwd == "Judaz2026":
-                                st.markdown("<div style='color: #00ffcc; font-size: 0.9rem; font-weight: bold;'>⚙️ MODALITÀ MODIFICA ATTIVA</div>", unsafe_allow_html=True)
+                                st.markdown(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']}) <a href='{url_maps}' target='_blank' class='maps-link' title='Apri Navigatore Maps'>🗺️</a>", unsafe_allow_html=True)
+                                st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
                                 
-                                new_title = st.text_input(f"Modifica Titolo", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
-                                new_data = st.text_input(f"Modifica Data (Testo)", value=str(row.get('Data', '')), key=f"data_{idx}")
-                                new_luogo = st.text_input(f"Modifica Luogo", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
-                                
-                                regione_attuale = str(row.get('Regione', 'Abruzzo')).strip()
-                                idx_regione = 0
-                                if regione_attuale in regioni_italia:
-                                    idx_regione = regioni_italia.index(regione_attuale)
-                                new_regione = st.selectbox(f"Modifica Regione", regioni_italia, index=idx_regione, key=f"reg_{idx}")
-                                
-                                new_info = st.text_area(f"Modifica Info / Note", value=str(row.get('Dettagli / Note', '')), key=f"info_{idx}")
-                                new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
-                                
-                                if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                    scheda.update_cell(riga_foglio_google, 1, new_title)
-                                    scheda.update_cell(riga_foglio_google, 2, new_data)
-                                    scheda.update_cell(riga_foglio_google, 3, new_luogo)
-                                    scheda.update_cell(riga_foglio_google, 4, new_regione)
-                                    scheda.update_cell(riga_foglio_google, 5, new_info)
-                                    scheda.update_cell(riga_foglio_google, 6, new_locandina.strip())
-                                    st.rerun()
+                                img_path = str(row.get('Locandina', '')).strip()
+                                if img_path.startswith("http"):
+                                    st.html(f"""
+                                    <a href="#zoom_{idx}">
+                                        <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
+                                    </a>
+                                    <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla a schermo intero</div>
                                     
-                                if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
-                                    scheda.delete_rows(riga_foglio_google)
-                                    st.rerun()
+                                    <div class="lightbox-target" id="zoom_{idx}">
+                                        <img src="{img_path}" alt="Zoom Locandina">
+                                        <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
+                                    </div>
+                                    """)
 
-                        conteggio = int(row['Partecipanti'])
-                        label = f"CI VADO 🔥 {conteggio}"
-                        if ha_gia_votato(chiave_voto):
-                            st.button(label, key=f"btn_{idx}", disabled=True)
-                        else:
-                            if st.button(label, key=f"btn_{idx}"):
-                                scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                registra_voto(chiave_voto)
-                                st.rerun()
+                                pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
+                                if pwd == "Judaz2026":
+                                    st.markdown("<div style='color: #00ffcc; font-size: 0.9rem; font-weight: bold;'>⚙️ MODALITÀ MODIFICA ATTIVA</div>", unsafe_allow_html=True)
+                                    
+                                    new_title = st.text_input(f"Modifica Titolo", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
+                                    new_data = st.text_input(f"Modifica Data (Testo)", value=str(row.get('Data', '')), key=f"data_{idx}")
+                                    new_luogo = st.text_input(f"Modifica Luogo", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
+                                    
+                                    regione_attuale = str(row.get('Regione', 'Abruzzo')).strip()
+                                    idx_regione = 0
+                                    if regione_attuale in regioni_italia:
+                                        idx_regione = regioni_italia.index(regione_attuale)
+                                    new_regione = st.selectbox(f"Modifica Regione", regioni_italia, index=idx_regione, key=f"reg_{idx}")
+                                    
+                                    new_info = st.text_area(f"Modifica Info / Note", value=str(row.get('Dettagli / Note', '')), key=f"info_{idx}")
+                                    new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
+                                    
+                                    if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
+                                        sh = gc.open(NOME_DEL_FOGLIO)
+                                        scheda = sh.get_worksheet(0)
+                                        scheda.update_cell(riga_foglio_google, 1, new_title)
+                                        scheda.update_cell(riga_foglio_google, 2, new_data)
+                                        scheda.update_cell(riga_foglio_google, 3, new_luogo)
+                                        scheda.update_cell(riga_foglio_google, 4, new_regione)
+                                        scheda.update_cell(riga_foglio_google, 5, new_info)
+                                        scheda.update_cell(riga_foglio_google, 6, new_locandina.strip())
+                                        st.cache_data.clear()
+                                        st.rerun()
+                                        
+                                    if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
+                                        sh = gc.open(NOME_DEL_FOGLIO)
+                                        scheda = sh.get_worksheet(0)
+                                        scheda.delete_rows(riga_foglio_google)
+                                        st.cache_data.clear()
+                                        st.rerun()
+
+                                conteggio = int(row['Partecipanti'])
+                                label = f"CI VADO 🔥 {conteggio}"
+                                if ha_gia_votato(chiave_voto):
+                                    st.button(label, key=f"btn_{idx}", disabled=True)
+                                else:
+                                    if st.button(label, key=f"btn_{idx}"):
+                                        sh = gc.open(NOME_DEL_FOGLIO)
+                                        scheda = sh.get_worksheet(0)
+                                        scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                        registra_voto(chiave_voto)
+                                        st.cache_data.clear()
+                                        st.rerun()
+                                st.markdown("</div>", unsafe_allow_html=True)
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
@@ -550,13 +586,7 @@ else:
             st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Where passion becomes brotherhood.»</p><br>", unsafe_allow_html=True)
             
-            try:
-                scheda_mc = foglio_di_calcolo.worksheet("motoclub")
-                dati_mc = scheda_mc.get_all_values()
-            except:
-                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows="100", cols="10")
-                scheda_mc.append_row(["Nome MotoClub", "Città", "Descrizione / Info", "Logo"])
-                dati_mc = [["Nome MotoClub", "Città", "Descrizione / Info", "Logo"]]
+            dati_mc = leggi_motoclub_da_sheet(NOME_DEL_FOGLIO)
 
             if len(dati_mc) > 1:
                 for row_mc in dati_mc[1:]:
@@ -586,13 +616,12 @@ else:
                     </div>
                     """)
             else:
-                st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
+                st.info("Nessun MotoClub registrato al momento.")
 
         # =========================================================
         # SCHERMATA 3: ADMIN
         # =========================================================
         elif st.session_state["page"] == "admin":
-            scheda = foglio_di_calcolo.get_worksheet(0)
             st.markdown("<h3 style='color: #ff9100; font-family: \"Special Elite\", cursive; text-align: center;'>Pannello Admin</h3>", unsafe_allow_html=True)
             pass_admin = st.text_input("Inserisci Password Amministratore", type="password", key="password_principale_admin")
             
@@ -608,7 +637,10 @@ else:
                     
                     if st.form_submit_button("PUBBLICA DIRETTAMENTE ONLINE"):
                         if adm_n and adm_d:
+                            sh = gc.open(NOME_DEL_FOGLIO)
+                            scheda = sh.get_worksheet(0)
                             scheda.append_row([adm_n, adm_d, adm_l, adm_reg, adm_i, adm_url.strip(), 0])
+                            st.cache_data.clear()
                             st.success("🔥 Evento pubblicato istantaneamente sul database pubblico!")
                         else:
                             st.error("Nome e Data sono obbligatori!")
