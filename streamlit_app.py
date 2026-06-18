@@ -224,13 +224,11 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 }}
 </style>
 
-<!-- Widget Grafico Contatore -->
 <div class="online-counter">
     <span class="dot-online"></span>
     <span>{utenti_online} Online</span>
 </div>
 
-<!-- Codice Invisibile di Tracciamento Realtime Statcounter -->
 <script type="text/javascript">
 var sc_project={SC_PROJECT}; 
 var sc_invisible=1; 
@@ -282,7 +280,9 @@ else:
                     st.markdown("""
                     <div style='background-color: #1f2124; border: 2px solid #ff9100; padding: 15px; border-radius: 8px; text-align: center; color: white; font-family: "Special Elite", cursive; margin-bottom: 20px;'>
                         🔥 Grazie per la tua segnalazione!<br>
-                        Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.
+                        Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.<br><br>
+                        Per modifiche o comunicazioni urgenti puoi scrivere a:<br> 
+                        <strong style='color: #ff9100;'>ironandrubbercustom@gmail.com</strong>
                     </div>
                     """, unsafe_allow_html=True)
                     if st.button("Aggiungi un altro evento"):
@@ -383,7 +383,7 @@ else:
         # =========================================================
         elif st.session_state["page"] == "mc":
             st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Dove la passione diventa fratellanza.»</p><br>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Where passion becomes brotherhood.»</p><br>", unsafe_allow_html=True)
             
             try:
                 scheda_mc = foglio_di_calcolo.worksheet("motoclub")
