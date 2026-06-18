@@ -138,8 +138,34 @@ st.markdown(f"""
 .titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
 .sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
 
-.stExpander {{ background-color: #1f2124 !important; border: 2px solid #ff9100 !important; border-radius: 10px !important; color: white !important; }}
-.streamlit-expanderHeader {{ color: #ff9100 !important; font-weight: bold !important; font-size: 1.0rem !important; }}
+/* --- FIX COMPLETO PER L'EXPANDER (TENDINA) --- */
+.stExpander {{ 
+    background-color: #1f2124 !important; 
+    border: 2px solid #ff9100 !important; 
+    border-radius: 10px !important; 
+    color: white !important; 
+}}
+
+/* Blocca lo sfondo scuro sull'intestazione in qualsiasi stato (normale, hover, focus, attivo) */
+div[data-testid="stExpander"] details summary, 
+div[data-testid="stExpander"] details summary:hover, 
+div[data-testid="stExpander"] details summary:focus,
+div[data-testid="stExpander"] details summary:active,
+div[data-testid="stExpander"] details[open] summary {{
+    background-color: #1f2124 !important;
+    color: white !important;
+}}
+
+/* Assicura che il testo del titolo sia sempre leggibile e colorato correttamente */
+.streamlit-expanderHeader {{ 
+    color: #ff9100 !important; 
+    font-weight: bold !important; 
+    font-size: 1.0rem !important; 
+    background-color: #1f2124 !important;
+}}
+div[data-testid="stExpander"] details summary p {{
+    color: white !important;
+}}
 
 div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
     background-color: #ff9100 !important; 
@@ -437,7 +463,6 @@ else:
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                         
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
-                            # --- CREAZIONE E RENDERING DEL LINK GOOGLE MAPS ---
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
