@@ -356,10 +356,33 @@ else:
 
                             pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
                             if pwd == "Judaz2026":
-                                new_title = st.text_input(f"Modifica Titolo {idx}", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
+                                st.markdown("<div style='color: #00ffcc; font-size: 0.9rem; font-weight: bold;'>⚙️ MODALITÀ MODIFICA ATTIVA</div>", unsafe_allow_html=True)
+                                
+                                # Campi per modificare TUTTI i dati dell'evento
+                                new_title = st.text_input(f"Modifica Titolo", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
+                                new_data = st.text_input(f"Modifica Data (Testo)", value=str(row.get('Data', '')), key=f"data_{idx}")
+                                new_luogo = st.text_input(f"Modifica Luogo", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
+                                
+                                # Calcolo indice regione attuale per il menu a tendina
+                                regione_attuale = str(row.get('Regione', 'Abruzzo')).strip()
+                                idx_regione = 0
+                                if regione_attuale in regioni_italia:
+                                    idx_regione = regioni_italia.index(regione_attuale)
+                                new_regione = st.selectbox(f"Modifica Regione", regioni_italia, index=idx_regione, key=f"reg_{idx}")
+                                
+                                new_info = st.text_area(f"Modifica Info / Note", value=str(row.get('Dettagli / Note', '')), key=f"info_{idx}")
+                                new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
+                                
                                 if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
+                                    # Aggiorniamo tutte le celle della riga corrispondente su Google Sheets
                                     scheda.update_cell(riga_foglio_google, 1, new_title)
+                                    scheda.update_cell(riga_foglio_google, 2, new_data)
+                                    scheda.update_cell(riga_foglio_google, 3, new_luogo)
+                                    scheda.update_cell(riga_foglio_google, 4, new_regione)
+                                    scheda.update_cell(riga_foglio_google, 5, new_info)
+                                    scheda.update_cell(riga_foglio_google, 6, new_locandina.strip())
                                     st.rerun()
+                                    
                                 if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
@@ -383,7 +406,7 @@ else:
         # =========================================================
         elif st.session_state["page"] == "mc":
             st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Where passion becomes brotherhood.»</p><br>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Dove la passione diventa fratellanza.»</p><br>", unsafe_allow_html=True)
             
             try:
                 scheda_mc = foglio_di_calcolo.worksheet("motoclub")
