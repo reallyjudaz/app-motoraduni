@@ -144,7 +144,7 @@ st.markdown(f"""
     border: 2px solid #ff9100 !important; 
     border-radius: 10px !important; 
     color: white !important; 
-    margin-bottom: 4px !important; /* Stringe l'unione visiva con il relativo pulsante */
+    margin-bottom: 4px !important;
 }}
 
 div[data-testid="stExpander"] details summary, 
@@ -282,14 +282,14 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
+/* --- LIGHTBOX MODIFICATO PER CONTENERE IL PANZOOM --- */
 .lightbox-target {{
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(10, 10, 11, 0.95);
     width: 0;
+    height: 100%;
+    background: rgba(10, 10, 11, 0.98);
     opacity: 0;
     overflow: hidden;
     z-index: 100000;
@@ -297,7 +297,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.2s ease;
 }}
 .lightbox-target:target {{
     width: 100%;
@@ -305,33 +305,49 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     bottom: 0;
     right: 0;
 }}
-.lightbox-target img {{
-    max-width: 92%;
-    max-height: 78vh;
-    object-fit: contain;
+
+/* Contenitore interno necessario per isolare i movimenti di zoom */
+.panzoom-wrapper {{
+    width: 98%;
+    height: 75vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}}
+
+.lightbox-target img.zoomable {{
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
     border: 2px solid #ff9100;
-    border-radius: 8px;
-    box-shadow: 0px 0px 20px rgba(255, 145, 0, 0.4);
+    border-radius: 6px;
+    box-shadow: 0px 0px 25px rgba(255, 145, 0, 0.5);
+    user-select: none;
+    -webkit-user-drag: none;
 }}
 .lightbox-close-btn {{
-    margin-top: 20px;
+    margin-top: 15px;
     background-color: #ff9100 !important;
     color: black !important;
     font-family: 'Special Elite', cursive !important;
     font-weight: bold !important;
     text-decoration: none !important;
-    padding: 10px 35px;
+    padding: 8px 30px;
     border-radius: 5px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     letter-spacing: 1px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    transition: background 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
     text-align: center;
+    z-index: 100001; /* Sopra all'immagine zoomata */
 }}
 .lightbox-close-btn:hover {{
     background-color: #e07f00 !important;
 }}
 </style>
+
+<!-- CARICAMENTO PANZOOM PER PINCH TO ZOOM NATIVO -->
+<script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
 
 <div class="online-counter">
     <span class="dot-online"></span>
@@ -476,12 +492,31 @@ else:
                                 <a href="#zoom_{idx}">
                                     <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
                                 </a>
-                                <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla a schermo intero</div>
+                                <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla e fare Pinch-Zoom</div>
                                 
                                 <div class="lightbox-target" id="zoom_{idx}">
-                                    <img src="{img_path}" alt="Zoom Locandina">
-                                    <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
+                                    <div class="panzoom-wrapper">
+                                        <img src="{img_path}" id="img_zoom_{idx}" class="zoomable" alt="Zoom Locandina">
+                                    </div>
+                                    <a class="lightbox-close-btn" id="close_{idx}" href="#_">← TORNA ALL'EVENTO</a>
                                 </div>
+
+                                <script>
+                                (function() {{
+                                    const elem = document.getElementById('img_zoom_{idx}');
+                                    const closeBtn = document.getElementById('close_{idx}');
+                                    const pz = Panzoom(elem, {{
+                                        maxScale: 4,
+                                        minScale: 1,
+                                        contain: 'outside',
+                                        startScale: 1
+                                    }});
+                                    elem.parentElement.addEventListener('wheel', pz.zoomWithWheel);
+                                    
+                                    // Reset dello zoom alla chiusura per evitare disallineamenti successivi
+                                    closeBtn.addEventListener('click', () => {{ pz.reset(); }});
+                                }})();
+                                </script>
                                 """)
 
                             pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
@@ -515,7 +550,7 @@ else:
                                     st.rerun()
 
                         # =========================================================
-                        # COMPORTAMENTO CORRETTO: PULSANTE FUORI E SPAZIO IN BASSO
+                        # PULSANTE FUORI E SPAZIO IN BASSO CORRETTO
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
                         label = f"CI VADO 🔥 {conteggio}"
@@ -527,7 +562,6 @@ else:
                                 registra_voto(chiave_voto)
                                 st.rerun()
                                 
-                        # Lo spazio ora si trova QUI (sotto il pulsante), separando visivamente la card dall'evento successivo
                         st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
                                 
                 else:
@@ -564,9 +598,21 @@ else:
                             </a>
                         </div>
                         <div class="lightbox-target" id="zoom_mc_{nome_mc.replace(' ', '_')}">
-                            <img src="{logo_mc.strip()}" alt="Zoom Logo Club">
-                            <a class="lightbox-close-btn" href="#_">← TORNA AI CLUB</a>
+                            <div class="panzoom-wrapper">
+                                <img src="{logo_mc.strip()}" id="img_zoom_mc_{nome_mc.replace(' ', '_')}" class="zoomable" alt="Zoom Logo Club">
+                            </div>
+                            <a class="lightbox-close-btn" id="close_mc_{nome_mc.replace(' ', '_')}" href="#_">← TORNA AI CLUB</a>
                         </div>
+
+                        <script>
+                        (function() {{
+                            const elem = document.getElementById('img_zoom_mc_{nome_mc.replace(' ', '_')}');
+                            const closeBtn = document.getElementById('close_mc_{nome_mc.replace(' ', '_')}');
+                            const pz = Panzoom(elem, {{ maxScale: 4, minScale: 1, contain: 'outside' }});
+                            elem.parentElement.addEventListener('wheel', pz.zoomWithWheel);
+                            closeBtn.addEventListener('click', () => {{ pz.reset(); }});
+                        }})();
+                        </script>
                         """
                     
                     st.html(f"""
