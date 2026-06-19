@@ -144,6 +144,7 @@ st.markdown(f"""
     border: 2px solid #ff9100 !important; 
     border-radius: 10px !important; 
     color: white !important; 
+    margin-bottom: 4px !important; /* Stringe l'unione visiva con il relativo pulsante */
 }}
 
 div[data-testid="stExpander"] details summary, 
@@ -514,10 +515,8 @@ else:
                                     st.rerun()
 
                         # =========================================================
-                        # RE-INDENTAZIONE: IL PULSANTE CORRETTO ESCE DALL'EXPANDER
+                        # COMPORTAMENTO CORRETTO: PULSANTE FUORI E SPAZIO IN BASSO
                         # =========================================================
-                        st.markdown("<div style='margin-top: -5px; margin-bottom: 15px;'></div>", unsafe_allow_html=True)
-                        
                         conteggio = int(row['Partecipanti'])
                         label = f"CI VADO 🔥 {conteggio}"
                         if ha_gia_votato(chiave_voto):
@@ -527,6 +526,9 @@ else:
                                 scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                                 registra_voto(chiave_voto)
                                 st.rerun()
+                                
+                        # Lo spazio ora si trova QUI (sotto il pulsante), separando visivamente la card dall'evento successivo
+                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
                                 
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
