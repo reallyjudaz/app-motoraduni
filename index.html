@@ -1,14 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-    <title>Iron and Rubber - Mappa Motoraduni</title>
-    <style type="text/css">
-        html { overflow: auto; }
-        html, body, div, iframe { margin: 0px; padding: 0px; height: 100%; border: none; }
-        iframe { display: block; width: 100%; border: none; overflow-y: auto; overflow-x: hidden; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iron & Rubber - Motoraduni e Moto Club</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #161719;
+            color: #ffffff;
+            font-family: 'Special Elite', cursive;
+            line-height: 1.6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            padding-bottom: 40px;
+        }
+
+        .logo {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #ff9100;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .sottotitolo {
+            color: #ff9100;
+            font-style: italic;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        /* IL TASTONE DI INGRESSO */
+        .tastone-ingresso {
+            display: block;
+            background-color: #ff9100;
+            color: #000000 !important;
+            font-weight: bold;
+            text-decoration: none;
+            padding: 18px;
+            font-size: 1.3rem;
+            border-radius: 8px;
+            margin: 30px 0;
+            box-shadow: 0px 4px 20px rgba(255, 145, 0, 0.4);
+            transition: transform 0.2s, background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .tastone-ingresso:hover {
+            transform: scale(1.03);
+            background-color: #e07f00;
+        }
+
+        /* SEZIONI INFORMATIVE */
+        .section {
+            background-color: #1f2124;
+            border: 2px solid #ff9100;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .section-title {
+            color: #ff9100;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 145, 0, 0.3);
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        ul {
+            list-style-type: none;
+        }
+
+        li {
+            margin-bottom: 15px;
+        }
+
+        li b {
+            color: #ff9100;
+        }
+
+        .email-highlight {
+            color: #00ffcc;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        footer {
+            color: #8a8d93;
+            font-size: 0.8rem;
+            margin-top: 30px;
+        }
     </style>
 </head>
 <body>
-    <iframe src="https://ironandrubber.streamlit.app/?embed=true"></iframe>
+
+    <div class="container">
+        
+        <!-- LOGO -->
+        <img src="logo_custom.png" alt="Iron & Rubber Logo" class="logo" onerror="this.style.display='none'">
+
+        <h1>Iron & Rubber</h1>
+        <p class="sottotitolo">«Non è la meta, è la strada a rivelare chi sei.»</p>
+
+        <!-- TASTONE DI INGRESSO DIRETTO ALLA TUA APP -->
+        <a href="https://app-motoraduni-6hqxxahyypkhyxmqmpsk2v.streamlit.app/" class="tastone-ingresso">
+            ENTRA NELLA MAPPA DEI RADUNI 🔥
+        </a>
+
+        <!-- SEZIONE INFO -->
+        <div class="section">
+            <div class="section-title">⚡ Cosa troverai all'interno</div>
+            <ul>
+                <li>🗺️ <b>Mappa Interattiva & Navigatore:</b> Trova i motoraduni più vicini a te. Con un semplice click sul simbolo della mappa si aprirà direttamente il navigatore per guidarti a destinazione.</li>
+                <li>📅 <b>Filtri per Mese e Regione:</b> Organizza i tuoi weekend su due ruote filtrando gli eventi in tutta Italia in base a dove e quando vuoi muoverti.</li>
+                <li>🔥 <b>Segnala la tua presenza:</b> Clicca su "Ci Vado" per far sapere alla community a quali raduni parteciperai e vedere quanti altri biker si stanno unendo.</li>
+            </ul>
+        </div>
+
+        <!-- SEZIONE MOTO CLUB -->
+        <div class="section">
+            <div class="section-title">🦅 Spazio ai Moto Club</div>
+            <p>Questo progetto nasce con il profondo rispetto per la tradizione e per i club che hanno scritto la storia del nostro movimento.</p>
+            <br>
+            <p>Se fai parte di un Moto Club e desideri far conoscere le vostre origini, la vostra storia e la vostra fratellanza all'interno della nostra sezione dedicata, inviaci il vostro stemma e una descrizione a:</p>
+            <br>
+            <p style="text-align: center;">
+                <a href="mailto:ironandrubbercustom@gmail.com" class="email-highlight">ironandrubbercustom@gmail.com</a>
+            </p>
+        </div>
+
+        <!-- SEZIONE INSTALLAZIONE -->
+        <div class="section">
+            <div class="section-title">📱 Come averla come App sul telefono</div>
+            <p>Una volta entrato nella mappa, puoi salvarla direttamente sulla schermata del tuo smartphone per aprirla con un click, senza passare dagli store:</p>
+            <br>
+            <p><b>🤖 Da Android (Chrome):</b> Clicca sui tre puntini in alto a destra e seleziona <i>"Aggiungi a schermata Home"</i>.</p>
+            <br>
+            <p><b>🍏 Da iPhone (Safari):</b> Clicca sul tasto di condivisione (il quadrato con la freccia verso l'alto) e seleziona <i>"Aggiungi alla schermata Home"</i>.</p>
+        </div>
+
+        <footer>
+            © 2026 Iron & Rubber. All Rights Reserved. Respect the Road.
+        </footer>
+
+    </div>
+
 </body>
 </html>
