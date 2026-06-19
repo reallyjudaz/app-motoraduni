@@ -420,20 +420,16 @@ else:
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
                 # =========================================================
-                # CORREZIONE SISTEMA DI CANCELLAZIONE AUTOMATICA SICURA
+                # SISTEMA DI CANCELLAZIONE AUTOMATICA SICURA
                 # =========================================================
                 oggi = pd.Timestamp.now().normalize()
-                # Trova tutte le righe associate a eventi passati
                 righe_da_eliminare = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]['GSheet_Row'].tolist()
                 
                 if righe_da_eliminare:
-                    # Ordiniamo dal numero di riga più alto a quello più basso per non sballare gli indici durante l'eliminazione
                     righe_da_eliminare.sort(reverse=True)
                     for riga in righe_da_eliminare:
                         scheda.delete_rows(int(riga))
                     
-                    # Rimuoviamo temporaneamente i dati eliminati anche dal DataFrame locale 
-                    # così la pagina si aggiorna ISTANTANEAMENTE senza bisogno del pericoloso st.rerun()
                     df = df[~df['GSheet_Row'].isin(righe_da_eliminare)]
                 # =========================================================
 
@@ -464,6 +460,7 @@ else:
                         riga_foglio_google = int(row['GSheet_Row'])
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                         
+                        # --- INIZIO EXPANDER DETTAGLI ---
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
@@ -516,15 +513,21 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                            conteggio = int(row['Partecipanti'])
-                            label = f"CI VADO 🔥 {conteggio}"
-                            if ha_gia_votato(chiave_voto):
-                                st.button(label, key=f"btn_{idx}", disabled=True)
-                            else:
-                                if st.button(label, key=f"btn_{idx}"):
-                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                    registra_voto(chiave_voto)
-                                    st.rerun()
+                        # =========================================================
+                        # RE-INDENTAZIONE: IL PULSANTE CORRETTO ESCE DALL'EXPANDER
+                        # =========================================================
+                        st.markdown("<div style='margin-top: -5px; margin-bottom: 15px;'></div>", unsafe_allow_html=True)
+                        
+                        conteggio = int(row['Partecipanti'])
+                        label = f"CI VADO 🔥 {conteggio}"
+                        if ha_gia_votato(chiave_voto):
+                            st.button(label, key=f"btn_{idx}", disabled=True)
+                        else:
+                            if st.button(label, key=f"btn_{idx}"):
+                                scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                registra_voto(chiave_voto)
+                                st.rerun()
+                                
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
@@ -569,7 +572,7 @@ else:
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
                         <div class="info-mc">{info_mc}</div>
-                        {{html_immagine}}
+                        {html_immagine}
                     </div>
                     """)
             else:
