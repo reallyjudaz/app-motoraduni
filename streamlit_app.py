@@ -19,13 +19,17 @@ if "fake_online" not in st.session_state:
 utenti_online = st.session_state["fake_online"]
 
 # --- GESTIONE DELLA NAVIGAZIONE (PAGINE) ---
+# "presentazione" = La tua pagina pubblicitaria/vetrina con il tastone
+# "home"          = La mappa classica con i raduni
+# "mc"            = La pagina dei Moto Club
+# "admin"         = Il pannello di controllo
 if "page" not in st.session_state:
-    st.session_state["page"] = "home"
+    st.session_state["page"] = "presentazione"
 
 # Controllo dei parametri URL per la navigazione dai tasti in basso
 if "menu" in st.query_params:
     scelta_menu = st.query_params["menu"]
-    if scelta_menu in ["home", "mc", "admin"]:
+    if scelta_menu in ["presentazione", "home", "mc", "admin"]:
         st.session_state["page"] = scelta_menu
     st.query_params.clear()
     st.rerun()
@@ -68,11 +72,9 @@ if "voti_locali" not in st.session_state:
     st.session_state["voti_locali"] = set()
 
 def registra_voto(chiave_evento):
-    # Salva il voto solo nella sessione del browser di questo specifico utente
     st.session_state["voti_locali"].add(str(chiave_evento))
 
 def ha_gia_votato(chiave_evento):
-    # Controlla se QUESTO utente specifico sul suo telefono ha già cliccato
     return str(chiave_evento) in st.session_state["voti_locali"]
 
 def parsing_data_biker(testo_data):
@@ -140,6 +142,32 @@ st.markdown(f"""
 .titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
 .sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
 
+/* BOX PUBBLICITARI / INFORMATIVI LANDING PAGE */
+.box-pubblicita {{
+    background-color: #1f2124;
+    border: 2px solid #ff9100;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+    font-family: 'Special Elite', cursive;
+    color: white;
+    text-align: left;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+}}
+.titolo-box {{
+    color: #ff9100;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 145, 0, 0.3);
+    padding-bottom: 5px;
+}}
+.email-evidenziata {{
+    color: #00ffcc;
+    font-weight: bold;
+    text-decoration: underline;
+}}
+
 /* --- FIX COMPLETO PER L'EXPANDER (TENDINA) --- */
 .stExpander {{ 
     background-color: #1f2124 !important; 
@@ -149,11 +177,7 @@ st.markdown(f"""
     margin-bottom: 4px !important;
 }}
 
-div[data-testid="stExpander"] details summary, 
-div[data-testid="stExpander"] details summary:hover, 
-div[data-testid="stExpander"] details summary:focus,
-div[data-testid="stExpander"] details summary:active,
-div[data-testid="stExpander"] details[open] summary {{
+details summary {{
     background-color: #1f2124 !important;
     color: white !important;
 }}
@@ -164,9 +188,6 @@ div[data-testid="stExpander"] details[open] summary {{
     font-size: 1.0rem !important; 
     background-color: #1f2124 !important;
 }}
-div[data-testid="stExpander"] details summary p {{
-    color: white !important;
-}}
 
 div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
     background-color: #ff9100 !important; 
@@ -174,8 +195,17 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
     font-weight: bold !important; 
     font-family: 'Special Elite', cursive !important; 
     border-radius: 5px !important; 
-    height: 38px !important; 
+    height: 44px !important; 
     width: 100%;
+    font-size: 1.1rem !important;
+    box-shadow: 0px 4px 15px rgba(255, 145, 0, 0.2);
+}}
+
+/* Stile per il tastone di ingresso gigante */
+.tastone-container button {{
+    height: 55px !important;
+    font-size: 1.25rem !important;
+    border: 2px solid #ffffff !important;
 }}
 
 label, .stTextInput label, .stTextArea label {{ color: white !important; }}
@@ -184,10 +214,6 @@ div[data-testid="stHorizontalBlock"] {{
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 12px !important;
-    width: 100% !important;
-}}
-div[data-testid="stHorizontalBlock"] > div {{
-    max-width: 100% !important;
     width: 100% !important;
 }}
 
@@ -219,36 +245,9 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     flex-direction: column;
     gap: 10px;
 }}
-.titolo-mc {{
-    color: #ff9100;
-    font-family: 'Special Elite', cursive;
-    font-size: 1.3rem;
-    margin-bottom: 2px;
-}}
-.citta-mc {{
-    color: #00ffcc;
-    font-size: 0.9rem;
-    font-family: 'Special Elite', cursive;
-    margin-bottom: 5px;
-}}
-.info-mc {{
-    font-size: 0.95rem;
-    line-height: 1.4;
-    margin-bottom: 5px;
-}}
-.logo-container-mc {{
-    text-align: center;
-    margin-top: 5px;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(255, 145, 0, 0.3);
-}}
-.logo-standard-mc {{
-    width: 130px !important;
-    height: 130px !important;
-    object-fit: contain !important;
-    border-radius: 5px;
-    background-color: transparent;
-}}
+.titolo-mc {{ color: #ff9100; font-family: 'Special Elite', cursive; font-size: 1.3rem; }}
+.citta-mc {{ color: #00ffcc; font-size: 0.9rem; font-family: 'Special Elite', cursive; }}
+.info-mc {{ font-size: 0.95rem; line-height: 1.4; }}
 
 .maps-link {{
     text-decoration: none !important;
@@ -257,23 +256,12 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     display: inline-flex;
     align-items: center;
     vertical-align: middle;
-    transition: transform 0.2s;
-}}
-.maps-link:hover {{
-    transform: scale(1.2);
 }}
 
 .locandina-cliccabile {{
     width: 100%;
-    max-width: 100%;
-    height: auto;
     border-radius: 6px;
     border: 1px solid rgba(255, 145, 0, 0.4);
-    cursor: pointer;
-    transition: transform 0.2s;
-}}
-.locandina-cliccabile:hover {{
-    transform: scale(1.01);
 }}
 .testo-aiuto-zoom {{
     color: #8a8d93;
@@ -284,7 +272,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
-/* --- LIGHTBOX MODIFICATO PER MAX ZOOM --- */
 .lightbox-target {{
     position: fixed;
     top: 0;
@@ -299,7 +286,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.2s ease;
 }}
 .lightbox-target:target {{
     width: 100%;
@@ -313,7 +299,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     object-fit: contain !important;
     border: 2px solid #ff9100;
     border-radius: 6px;
-    box-shadow: 0px 0px 25px rgba(255, 145, 0, 0.5);
 }}
 .lightbox-close-btn {{
     margin-top: 15px;
@@ -325,12 +310,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     padding: 8px 30px;
     border-radius: 5px;
     font-size: 0.95rem;
-    letter-spacing: 1px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-    text-align: center;
-}}
-.lightbox-close-btn:hover {{
-    background-color: #e07f00 !important;
 }}
 </style>
 
@@ -345,7 +324,6 @@ var sc_invisible=1;
 var sc_security="{SC_SECURITY}"; 
 </script>
 <script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
-<noscript><div class="statcounter"><a title="Web Analytics" href="https://statcounter.com/" target="_blank"><img class="statcounter" src="https://c.statcounter.com/{SC_PROJECT}/0/{SC_SECURITY}/1/" alt="Web Analytics" referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
 """, unsafe_allow_html=True)
 
 if os.path.exists("logo_custom.png"):
@@ -361,9 +339,49 @@ else:
         foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
         
         # =========================================================
+        # SCHERMATA 0: PAGINA DI PRESENTAZIONE / PUBBLICITÀ (LANDING)
+        # =========================================================
+        if st.session_state["page"] == "presentazione":
+            
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+            
+            # IL TASTONE DI INGRESSO (Inserito in un container speciale CSS)
+            st.markdown('<div class="tastone-container">', unsafe_allow_html=True)
+            if st.button("🔥 ENTRA NELLA MAPPA DEI RADUNI 🔥", use_container_width=True):
+                st.session_state["page"] = "home"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # BOX INFORMATIVI CODIFICATI IN HTML PULITO
+            st.markdown("""
+            <div class="box-pubblicita">
+                <div class="titolo-box">⚡ COSA TROVERAI ALL'INTERNO</div>
+                • <b>Mappa Interattiva:</b> Trova tutti i motoraduni d'Italia a colpo d'occhio. Con un click sul simbolo della mappa apri direttamente il navigatore di Google Maps.<br><br>
+                • <b>Calendario e Filtri:</b> Organizza i tuoi weekend filtrando gli eventi per Mese o per Regione, senza perderti nessun raduno nella tua zona.<br><br>
+                • <b>Segnala la presenza:</b> Clicca su "Ci Vado" per far sapere alla community a quali raduni parteciperai e vedere quanti altri biker si stanno muovendo.
+            </div>
+
+            <div class="box-pubblicita">
+                <div class="titolo-box">🦅 SPAZIO AI MOTO CLUB</div>
+                Questo progetto nasce con il profondo rispetto per la tradizione e per i club che scrivono la storia del movimento su due ruote.<br><br>
+                Se fai parte di un <b>Moto Club</b> e desideri far conoscere gratuitamente la vostra storia, la fratellanza e i vostri eventi all'interno della nostra sezione dedicata (MC), inviaci il vostro stemma e una descrizione a:<br>
+                <center><span class="email-evidenziata">ironandrubbercustom@gmail.com</span></center>
+            </div>
+
+            <div class="box-pubblicita">
+                <div class="titolo-box">📱 COME AVERLA COME APP SUL TELEFONO</div>
+                Puoi salvare <i>Iron & Rubber</i> direttamente sulla schermata del tuo smartphone per aprirla con un click, senza passare dagli Store:<br><br>
+                <b>🤖 Da Android (Chrome):</b> Clicca sui tre puntini in alto a destra e seleziona <i>"Aggiungi a schermata Home"</i>.<br><br>
+                <b>🍏 Da iPhone (Safari):</b> Clicca sul tasto di condivisione (il quadrato con la freccia verso l'alto) e seleziona <i>"Aggiungi alla schermata Home"</i>.
+            </div>
+            """, unsafe_allow_html=True)
+
+        # =========================================================
         # SCHERMATA 1: HOME (LISTA MOTORADUNI)
         # =========================================================
-        if st.session_state["page"] == "home":
+        elif st.session_state["page"] == "home":
             scheda = foglio_di_calcolo.get_worksheet(0)
             
             try:
@@ -406,7 +424,7 @@ else:
                         reg_scelta = st.selectbox("Seleziona Regione", regioni_italia, key="add_regione_form")
                         i = st.text_area("Info")
                         url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
-                     
+                       
                         if st.form_submit_button("SALVA"):
                             path_finale = url_inserito.strip()
                             scheda_da_verificare.append_row([n, d, l, reg_scelta, i, path_finale, 0])
@@ -421,9 +439,7 @@ else:
                 df['Data_Date'] = df['Data'].apply(parsing_data_biker)
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
-                # =========================================================
-                # SISTEMA DI CANCELLAZIONE AUTOMATICA SICURA
-                # =========================================================
+                # --- SISTEMA DI CANCELLAZIONE AUTOMATICA ---
                 oggi = pd.Timestamp.now().normalize()
                 righe_da_eliminare = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]['GSheet_Row'].tolist()
                 
@@ -431,9 +447,7 @@ else:
                     righe_da_eliminare.sort(reverse=True)
                     for riga in righe_da_eliminare:
                         scheda.delete_rows(int(riga))
-                    
                     df = df[~df['GSheet_Row'].isin(righe_da_eliminare)]
-                # =========================================================
 
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
                 df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
@@ -462,7 +476,6 @@ else:
                         riga_foglio_google = int(row['GSheet_Row'])
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
                         
-                        # --- INIZIO EXPANDER DETTAGLI ---
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
@@ -515,21 +528,17 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                        # =========================================================
-                        # PULSANTE PARTECIPAZIONE CON BLOCCO MODIFICATO
-                        # =========================================================
-                        conteggio = int(row['Partecipanti'])
-                        label = f"CI VADO 🔥 {conteggio}"
-                        if ha_gia_votato(chiave_voto):
-                            st.button(label, key=f"btn_{idx}", disabled=True)
-                        else:
-                            if st.button(label, key=f"btn_{idx}"):
-                                scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                registra_voto(chiave_voto)
-                                st.rerun()
-                                
-                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-                                
+                            conteggio = int(row['Partecipanti'])
+                            label = f"CI VADO 🔥 {conteggio}"
+                            if ha_gia_votato(chiave_voto):
+                                st.button(label, key=f"btn_{idx}", disabled=True)
+                            else:
+                                if st.button(label, key=f"btn_{idx}"):
+                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                    registra_voto(chiave_voto)
+                                    st.rerun()
+                                    
+                            st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
@@ -574,11 +583,11 @@ else:
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
                         <div class="info-mc">{info_mc}</div>
-                        {{html_immagine}}
+                        {html_immagine}
                     </div>
                     """)
             else:
-                st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
+                st.info("Nessun MotoClub registrato al momento.")
 
         # =========================================================
         # SCHERMATA 3: ADMIN
@@ -608,11 +617,12 @@ else:
     except Exception as e:
         st.error(f"Errore generale: {e}")
 
-# --- 5. MENU FISSO IN BASSO INTERATTIVO ---
+# --- 5. MENU FISSO IN BASSO INTERATTIVO AGGIORNATO ---
 st.markdown("""
-<div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
-    <a href='?menu=home' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
-    <a href='?menu=mc' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>MC</a>
-    <a href='?menu=admin' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>ADMIN</a>
+<div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: space-around; padding: 15px 10px; border-top: 3px solid #ff9100; z-index: 9999;'>
+    <a href='?menu=presentazione' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>INFO</a>
+    <a href='?menu=home' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>MAPPA</a>
+    <a href='?menu=mc' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>MC</a>
+    <a href='?menu=admin' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>ADMIN</a>
 </div>
 """, unsafe_allow_html=True)
