@@ -63,15 +63,17 @@ regioni_italia = ["Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romag
                   "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
                   "Umbria", "Valle d'Aosta", "Veneto"]
 
-# --- 3. FUNZIONI DATI ---
+# --- 3. FUNZIONI DATI (SISTEMATE PER UTENTI MULTIPLI) ---
+if "voti_locali" not in st.session_state:
+    st.session_state["voti_locali"] = set()
+
 def registra_voto(chiave_evento):
-    with open("voti_fatti.txt", "a") as f:
-        f.write(f"{chiave_evento}\n")
+    # Salva il voto solo nella sessione del browser di questo specifico utente
+    st.session_state["voti_locali"].add(str(chiave_evento))
 
 def ha_gia_votato(chiave_evento):
-    if not os.path.exists("voti_fatti.txt"): return False
-    with open("voti_fatti.txt", "r") as f:
-        return str(chiave_evento) in f.read().splitlines()
+    # Controlla se QUESTO utente specifico sul suo telefono ha già cliccato
+    return str(chiave_evento) in st.session_state["voti_locali"]
 
 def parsing_data_biker(testo_data):
     testo = str(testo_data).lower().strip()
@@ -305,7 +307,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     bottom: 0;
     right: 0;
 }}
-/* Sfrutta quasi tutto lo schermo disponibile preservando le proporzioni originali */
 .lightbox-target img {{
     max-width: 98% !important;
     max-height: 85vh !important;
@@ -515,7 +516,7 @@ else:
                                     st.rerun()
 
                         # =========================================================
-                        # PULSANTE FUORI E SPAZIO IN BASSO CORRETTO
+                        # PULSANTE PARTECIPAZIONE CON BLOCCO MODIFICATO
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
                         label = f"CI VADO 🔥 {conteggio}"
@@ -573,7 +574,7 @@ else:
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
                         <div class="info-mc">{info_mc}</div>
-                        {html_immagine}
+                        {{html_immagine}}
                     </div>
                     """)
             else:
