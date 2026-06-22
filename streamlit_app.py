@@ -5,16 +5,16 @@ import re
 import gspread
 from google.oauth2 import service_account
 import urllib.parse
-import random
 
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
 # --- IMPOSTAZIONI STATCOUNTER CONFIGURATE ---
-SC_PROJECT = "13297832"
-SC_SECURITY = "54bb43fa"
+SC_PROJECT = "13297832"    
+SC_SECURITY = "54bb43fa"  
 
 if "fake_online" not in st.session_state:
+    import random
     st.session_state["fake_online"] = random.randint(1, 3)
 utenti_online = st.session_state["fake_online"]
 
@@ -68,23 +68,16 @@ if "voti_locali" not in st.session_state:
     st.session_state["voti_locali"] = set()
 
 def registra_voto(chiave_evento):
+    # Salva il voto solo nella sessione del browser di questo specifico utente
     st.session_state["voti_locali"].add(str(chiave_evento))
 
 def ha_gia_votato(chiave_evento):
+    # Controlla se QUESTO utente specifico sul suo telefono ha già cliccato
     return str(chiave_evento) in st.session_state["voti_locali"]
 
 def parsing_data_biker(testo_data):
     testo = str(testo_data).lower().strip()
-    if not testo or testo == "nan" or testo == "vedi nel sito" or testo == "vedi nel file": return pd.NaT
-    
-    # Prova prima il match diretto del formato standard GG/MM/AAAA (es. da motoraduni.it)
-    match_standard = re.search(r'\b(\d{2})/(\d{2})/(202\d)\b', testo)
-    if match_standard:
-        try:
-            return pd.Timestamp(year=int(match_standard.group(3)), month=int(match_standard.group(2)), day=int(match_standard.group(1)))
-        except:
-            pass
-
+    if not testo or testo == "nan": return pd.NaT
     mesi = {
         'gen': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'mag': 5, 'giu': 6, 
         'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'nov': 11, 'dic': 12
@@ -147,6 +140,7 @@ st.markdown(f"""
 .titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
 .sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
 
+/* --- FIX COMPLETO PER L'EXPANDER (TENDINA) --- */
 .stExpander {{ 
     background-color: #1f2124 !important; 
     border: 2px solid #ff9100 !important; 
@@ -290,6 +284,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
+/* --- LIGHTBOX MODIFICATO PER MAX ZOOM --- */
 .lightbox-target {{
     position: fixed;
     top: 0;
@@ -311,7 +306,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     opacity: 1;
     bottom: 0;
     right: 0;
-    left: 0;
 }}
 .lightbox-target img {{
     max-width: 98% !important;
@@ -428,11 +422,17 @@ else:
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
                 # =========================================================
-                # SISTEMA FILTRAGGIO EVENTI SCADUTI (SICURO ED EFFICIENTE)
+                # SISTEMA DI CANCELLAZIONE AUTOMATICA SICURA
                 # =========================================================
                 oggi = pd.Timestamp.now().normalize()
-                # Nascondiamo solo dall'app gli eventi passati per evitare sovraccarichi API e rallentamenti
-                df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
+                righe_da_eliminare = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]['GSheet_Row'].tolist()
+                
+                if righe_da_eliminare:
+                    righe_da_eliminare.sort(reverse=True)
+                    for riga in righe_da_eliminare:
+                        scheda.delete_rows(int(riga))
+                    
+                    df = df[~df['GSheet_Row'].isin(righe_da_eliminare)]
                 # =========================================================
 
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
@@ -466,7 +466,6 @@ else:
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
-                            # FIX LINK GOOGLE MAPS CORRETTO
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
                             
                             st.markdown(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']}) <a href='{url_maps}' target='_blank' class='maps-link' title='Apri Navigatore Maps'>🗺️</a>", unsafe_allow_html=True)
@@ -516,21 +515,21 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                            # =========================================================
-                            # PULSANTE PARTECIPAZIONE
-                            # =========================================================
-                            conteggio = int(row['Partecipanti'])
-                            label_btn = f"CI VADO 🔥 {conteggio}"
-                            if ha_gia_votato(chiave_voto):
-                                st.button(label_btn, key=f"btn_{idx}", disabled=True)
-                            else:
-                                if st.button(label_btn, key=f"btn_{idx}"):
-                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                    registra_voto(chiave_voto)
-                                    st.rerun()
-                                    
-                            st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-                                    
+                        # =========================================================
+                        # PULSANTE PARTECIPAZIONE CON BLOCCO MODIFICATO
+                        # =========================================================
+                        conteggio = int(row['Partecipanti'])
+                        label = f"CI VADO 🔥 {conteggio}"
+                        if ha_gia_votato(chiave_voto):
+                            st.button(label, key=f"btn_{idx}", disabled=True)
+                        else:
+                            if st.button(label, key=f"btn_{idx}"):
+                                scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                registra_voto(chiave_voto)
+                                st.rerun()
+                                
+                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+                                
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
@@ -558,27 +557,24 @@ else:
                     
                     html_immagine = ""
                     if logo_mc.strip().startswith("http"):
-                        # Sostituiamo gli spazi nel nome per non rompere l'ID dell'HTML
-                        id_safe = nome_mc.replace(' ', '_').replace("'", "_")
                         html_immagine = f"""
                         <div class="logo-container-mc">
-                            <a href="#zoom_mc_{id_safe}">
+                            <a href="#zoom_mc_{nome_mc.replace(' ', '_')}">
                                 <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
                             </a>
                         </div>
-                        <div class="lightbox-target" id="zoom_mc_{id_safe}">
+                        <div class="lightbox-target" id="zoom_mc_{nome_mc.replace(' ', '_')}">
                             <img src="{logo_mc.strip()}" alt="Zoom Logo Club">
                             <a class="lightbox-close-btn" href="#_">← TORNA AI CLUB</a>
                         </div>
                         """
                     
-                    # FIX delle doppie parentesi graffe dentro st.html con f-string
                     st.html(f"""
                     <div class="card-mc">
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
                         <div class="info-mc">{info_mc}</div>
-                        {html_immagine}
+                        {{html_immagine}}
                     </div>
                     """)
             else:
