@@ -5,16 +5,16 @@ import re
 import gspread
 from google.oauth2 import service_account
 import urllib.parse
+import random
 
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
 
 # --- IMPOSTAZIONI STATCOUNTER CONFIGURATE ---
-SC_PROJECT = "13297832"    
-SC_SECURITY = "54bb43fa"  
+SC_PROJECT = "13297832"
+SC_SECURITY = "54bb43fa"
 
 if "fake_online" not in st.session_state:
-    import random
     st.session_state["fake_online"] = random.randint(1, 3)
 utenti_online = st.session_state["fake_online"]
 
@@ -68,16 +68,23 @@ if "voti_locali" not in st.session_state:
     st.session_state["voti_locali"] = set()
 
 def registra_voto(chiave_evento):
-    # Salva il voto solo nella sessione del browser di questo specifico utente
     st.session_state["voti_locali"].add(str(chiave_evento))
 
 def ha_gia_votato(chiave_evento):
-    # Controlla se QUESTO utente specifico sul suo telefono ha già cliccato
     return str(chiave_evento) in st.session_state["voti_locali"]
 
 def parsing_data_biker(testo_data):
     testo = str(testo_data).lower().strip()
-    if not testo or testo == "nan": return pd.NaT
+    if not testo or testo == "nan" or testo == "vedi nel sito" or testo == "vedi nel file": return pd.NaT
+    
+    # Prova prima il match diretto del formato standard GG/MM/AAAA (es. da motoraduni.it)
+    match_standard = re.search(r'\b(\d{2})/(\d{2})/(202\d)\b', testo)
+    if match_standard:
+        try:
+            return pd.Timestamp(year=int(match_standard.group(3)), month=int(match_standard.group(2)), day=int(match_standard.group(1)))
+        except:
+            pass
+
     mesi = {
         'gen': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'mag': 5, 'giu': 6, 
         'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'nov': 11, 'dic': 12
@@ -140,7 +147,6 @@ st.markdown(f"""
 .titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
 .sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
 
-/* --- FIX COMPLETO PER L'EXPANDER (TENDINA) --- */
 .stExpander {{ 
     background-color: #1f2124 !important; 
     border: 2px solid #ff9100 !important; 
@@ -284,7 +290,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
-/* --- LIGHTBOX MODIFICATO PER MAX ZOOM --- */
 .lightbox-target {{
     position: fixed;
     top: 0;
@@ -306,6 +311,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     opacity: 1;
     bottom: 0;
     right: 0;
+    left: 0;
 }}
 .lightbox-target img {{
     max-width: 98% !important;
@@ -369,9 +375,10 @@ else:
             try:
                 scheda_da_verificare = foglio_di_calcolo.worksheet("da verificare")
             except:
-                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows="100", cols="20")
+                # CORREZIONE 1: rimossi gli apici da rows e cols
+                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows=100, cols=20)
                 scheda_da_verificare.append_row(["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"])
-            
+                
             colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
             
             tutti_i_dati = scheda.get_all_values()
@@ -422,17 +429,11 @@ else:
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
                 # =========================================================
-                # SISTEMA DI CANCELLAZIONE AUTOMATICA SICURA
+                # SISTEMA FILTRAGGIO EVENTI SCADUTI (SICURO ED EFFICIENTE)
                 # =========================================================
                 oggi = pd.Timestamp.now().normalize()
-                righe_da_eliminare = df[(df['Data_Date'].notna()) & (df['Data_Date'] < oggi)]['GSheet_Row'].tolist()
-                
-                if righe_da_eliminare:
-                    righe_da_eliminare.sort(reverse=True)
-                    for riga in righe_da_eliminare:
-                        scheda.delete_rows(int(riga))
-                    
-                    df = df[~df['GSheet_Row'].isin(righe_da_eliminare)]
+                # Nascondiamo solo dall'app gli eventi passati per evitare sovraccarichi API e rallentamenti
+                df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
                 # =========================================================
 
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
@@ -466,6 +467,8 @@ else:
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
+                            
+                            # CORREZIONE 2: Link Google Maps ufficiale
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
                             
                             st.markdown(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']}) <a href='{url_maps}' target='_blank' class='maps-link' title='Apri Navigatore Maps'>🗺️</a>", unsafe_allow_html=True)
@@ -503,12 +506,9 @@ else:
                                 new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
                                 
                                 if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                    scheda.update_cell(riga_foglio_google, 1, new_title)
-                                    scheda.update_cell(riga_foglio_google, 2, new_data)
-                                    scheda.update_cell(riga_foglio_google, 3, new_luogo)
-                                    scheda.update_cell(riga_foglio_google, 4, new_regione)
-                                    scheda.update_cell(riga_foglio_google, 5, new_info)
-                                    scheda.update_cell(riga_foglio_google, 6, new_locandina.strip())
+                                    # CORREZIONE 3: Singola chiamata API per aggiornare la riga per evitare rate limit
+                                    nuovi_valori = [new_title, new_data, new_luogo, new_regione, new_info, new_locandina.strip()]
+                                    scheda.update(range_name=f"A{riga_foglio_google}:F{riga_foglio_google}", values=[nuovi_valori])
                                     st.rerun()
                                     
                                 if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
@@ -516,20 +516,20 @@ else:
                                     st.rerun()
 
                         # =========================================================
-                        # PULSANTE PARTECIPAZIONE CON BLOCCO MODIFICATO
+                        # PULSANTE PARTECIPAZIONE (SPRESTATO FUORI DALL'EXPANDER)
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
-                        label = f"CI VADO 🔥 {conteggio}"
+                        label_btn = f"CI VADO 🔥 {conteggio}"
                         if ha_gia_votato(chiave_voto):
-                            st.button(label, key=f"btn_{idx}", disabled=True)
+                            st.button(label_btn, key=f"btn_{idx}", disabled=True)
                         else:
-                            if st.button(label, key=f"btn_{idx}"):
+                            if st.button(label_btn, key=f"btn_{idx}"):
                                 scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                                 registra_voto(chiave_voto)
                                 st.rerun()
                                 
                         st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-                                
+                                    
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
@@ -546,7 +546,8 @@ else:
                 scheda_mc = foglio_di_calcolo.worksheet("motoclub")
                 dati_mc = scheda_mc.get_all_values()
             except:
-                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows="100", cols="10")
+                # CORREZIONE 1: rimossi gli apici da rows e cols
+                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows=100, cols=10)
                 scheda_mc.append_row(["Nome MotoClub", "Città", "Descrizione / Info", "Logo"])
                 dati_mc = [["Nome MotoClub", "Città", "Descrizione / Info", "Logo"]]
 
@@ -557,13 +558,14 @@ else:
                     
                     html_immagine = ""
                     if logo_mc.strip().startswith("http"):
+                        id_safe = nome_mc.replace(' ', '_').replace("'", "_")
                         html_immagine = f"""
                         <div class="logo-container-mc">
-                            <a href="#zoom_mc_{nome_mc.replace(' ', '_')}">
+                            <a href="#zoom_mc_{id_safe}">
                                 <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
                             </a>
                         </div>
-                        <div class="lightbox-target" id="zoom_mc_{nome_mc.replace(' ', '_')}">
+                        <div class="lightbox-target" id="zoom_mc_{id_safe}">
                             <img src="{logo_mc.strip()}" alt="Zoom Logo Club">
                             <a class="lightbox-close-btn" href="#_">← TORNA AI CLUB</a>
                         </div>
@@ -574,7 +576,7 @@ else:
                         <div class="titolo-mc">⚡ {nome_mc}</div>
                         <div class="citta-mc">📍 Sede: {citta_mc}</div>
                         <div class="info-mc">{info_mc}</div>
-                        {{html_immagine}}
+                        {html_immagine}
                     </div>
                     """)
             else:
