@@ -208,17 +208,18 @@ div[data-testid="stExpander"] details[open] summary p::after {{
     color: #8a8d93;
 }}
 
-/* FORZA LE COLONNE DEI FILTRI A STARE SULLA STESSA RIGA ANCHE SU MOBILE */
+/* FORZA LE COLONNE DEI FILTRI A STARE SULLA STESSA RIGA SENZA SCROLL ORIZZONTALE */
 div[data-testid="stHorizontalBlock"] {{
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
-    gap: 15px !important;
+    gap: 10px !important;
+    width: 100% !important;
 }}
 div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
-    width: 50% !important;
-    flex: 1 1 50% !important;
-    min-width: 50% !important;
+    width: 100% !important;
+    flex: 1 1 0px !important; /* Si adatta perfettamente senza debordare */
+    min-width: 0 !important; /* Impedisce l'overflow sui display piccoli */
 }}
 
 /* Stile nativo pulsante Streamlit (usato quando NON c'è la locandina) */
