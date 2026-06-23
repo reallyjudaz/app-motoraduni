@@ -174,19 +174,18 @@ div[data-testid="stExpander"] details summary p {{
     color: white !important;
 }}
 
-div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
+/* Stile nativo pulsante Streamlit (usato quando NON c'è la locandina) */
+div[data-testid="stButton"] button {{ 
     background-color: #ff9100 !important; 
     color: black !important; 
     font-weight: bold !important; 
     font-family: 'Special Elite', cursive !important; 
     border-radius: 5px !important; 
-    height: 38px !important; 
-    width: 100%;
+    height: 42px !important; 
 }}
 
 label, .stTextInput label, .stTextArea label {{ color: white !important; }}
 
-/* Rimosso il grid forzato che rompeva i layout flessibili su mobile */
 .filtri-container div[data-testid="stHorizontalBlock"] {{
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
@@ -287,14 +286,55 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
-/* Mini-anteprima della locandina di fianco al tasto CI VADO */
-.mini-locandina-anteprima {{
-    width: 38px !important;
-    height: 38px !important;
-    object-fit: cover !important;
+/* CONTENITORE IN LINEA PER CI VADO + ANTEPRIMA LOCANDINA */
+.riga-pulsante-anteprima {{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 15px !important; /* Spazio preciso tra bottone e locandina */
+    width: 100% !important;
+    margin-top: 5px !important;
+}}
+
+/* Bottone finto in puro HTML/CSS che imita Streamlit al 100% */
+.html-btn-civado {{
+    background-color: #ff9100 !important;
+    color: black !important;
+    font-weight: bold !important;
+    font-family: 'Special Elite', cursive !important;
+    border-radius: 5px !important;
+    height: 42px !important;
+    padding: 0px 25px !important;
+    font-size: 0.95rem !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+}}
+.html-btn-civado:hover {{
+    background-color: #e07f00 !important;
+}}
+.html-btn-disabilitato {{
+    background-color: #555555 !important;
+    color: #bbbbbb !important;
+    cursor: not-allowed !important;
+}}
+
+/* Nuova dimensione locandina: cresciuta a 55px e resa rettangolare morbida */
+.locandina-anteprima-rettangolare {{
+    height: 55px !important;
+    width: auto !important;
+    max-width: 90px !important;
+    object-fit: contain !important;
     border: 2px solid #ff9100;
     border-radius: 5px;
-    box-shadow: 0px 0px 8px rgba(255, 145, 0, 0.3);
+    box-shadow: 0px 0px 10px rgba(255, 145, 0, 0.4);
+    transition: transform 0.1s;
+}}
+.locandina-anteprima-rettangolare:hover {{
+    transform: scale(1.05);
 }}
 
 .lightbox-target {{
@@ -447,7 +487,6 @@ else:
                 df['Mese_Filtro'] = df['Data_Date'].apply(lambda x: f"{mesi_ita[x.month]} {x.year}" if pd.notna(x) else "Da definire")
                 opzioni_mesi = ["Tutte"] + [m for m in list(df['Mese_Filtro'].unique()) if m != "Da definire"]
 
-                # Wrapper HTML temporaneo per applicare lo stile grid solo qui e non sui tasti in basso
                 st.markdown("<div class='filtri-container'>", unsafe_allow_html=True)
                 col_regione, col_data = st.columns(2)
                 with col_regione:
@@ -484,11 +523,6 @@ else:
                                     <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
                                 </a>
                                 <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla a schermo intero</div>
-                                
-                                <div class="lightbox-target" id="zoom_{idx}">
-                                    <img src="{img_path}" alt="Zoom Locandina">
-                                    <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
-                                </div>
                                 """)
 
                             pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
@@ -521,38 +555,52 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
+                        # --- LIGHTBOX GLOBALE ACCESSIBILE DA ENTRAMBE LE IMMAGINI ---
+                        if ha_locandina:
+                            st.html(f"""
+                            <div class="lightbox-target" id="zoom_{idx}">
+                                <img src="{img_path}" alt="Zoom Locandina">
+                                <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
+                            </div>
+                            """)
+
                         # =========================================================
-                        # NUOVO BLOCCO AFFIANCAMENTO: TASTO + ANTEPRIMA LOCANDINA
+                        # RISOLUZIONE ACCANTO: BLOCCO INIEZIONE FLEXBOX
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
-                        label_btn = f"CI VADO 🔥 {conteggio}"
                         
                         if ha_locandina:
-                            # Se c'è la locandina, dividiamo lo spazio in proporzione 5 a 1 per tenerla minuscola
-                            col_btn, col_thumb = st.columns([5, 1])
-                            with col_btn:
-                                if ha_gia_votato(chiave_voto):
-                                    st.button(label_btn, key=f"btn_{idx}", disabled=True)
-                                else:
-                                    if st.button(label_btn, key=f"btn_{idx}"):
-                                        scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                        registra_voto(chiave_voto)
-                                        st.rerun()
-                            with col_thumb:
-                                # Stampa la miniatura cliccabile collegata direttamente al Lightbox dell'evento
-                                st.html(f"""
-                                <div style="display: flex; justify-content: center; align-items: center; height: 38px;">
-                                    <a href="#zoom_{idx}">
-                                        <img src="{img_path}" class="mini-locandina-anteprima" alt="Preview">
-                                    </a>
-                                </div>
-                                """)
-                        else:
-                            # Se non c'è la locandina, il pulsante prende tutta la riga come prima
-                            if ha_gia_votato(chiave_voto):
-                                st.button(label_btn, key=f"btn_{idx}", disabled=True)
+                            # Se c'è la locandina, usiamo un unico blocco HTML per incollarli vicini
+                            gia_votato = ha_gia_votato(chiave_voto)
+                            
+                            if gia_votato:
+                                html_bottone = f'<div class="html-btn-civado html-btn-disabilitato">CI VADO 🔥 {conteggio}</div>'
                             else:
-                                if st.button(label_btn, key=f"btn_{idx}"):
+                                html_bottone = f'<a href="?vota={idx}" target="_self" class="html-btn-civado">CI VADO 🔥 {conteggio}</a>'
+                            
+                            st.html(f"""
+                            <div class="riga-pulsante-anteprima">
+                                {html_bottone}
+                                <a href="#zoom_{idx}">
+                                    <img src="{img_path}" class="locandina-anteprima-rettangolare" alt="Preview">
+                                </a>
+                            </div>
+                            """)
+                            
+                            # Intercettiamo il voto passato tramite URL (in modo nativo e sicuro)
+                            if f"vota" in st.query_params and st.query_params["vota"] == str(idx):
+                                if not gia_votato:
+                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                    registra_voto(chiave_voto)
+                                    st.query_params.clear()
+                                    st.rerun()
+                        else:
+                            # Se non c'è la locandina, usiamo il bottone classico a tutta riga
+                            label_btn = f"CI VADO 🔥 {conteggio}"
+                            if ha_gia_votato(chiave_voto):
+                                st.button(label_btn, key=f"btn_{idx}", disabled=True, use_container_width=True)
+                            else:
+                                if st.button(label_btn, key=f"btn_{idx}", use_container_width=True):
                                     scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                                     registra_voto(chiave_voto)
                                     st.rerun()
