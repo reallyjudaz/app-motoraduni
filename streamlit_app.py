@@ -147,28 +147,39 @@ st.markdown(f"""
 .titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
 .sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
 
-/* STRUTTURA TENDINA EVENTO OTTIMIZZATA ED EFFETTO CLICK */
+/* STRUTTURA TENDINA EVENTO NASCONDENDO IL TRIANGOLO NATIVO */
 .stExpander {{ 
     background-color: #1f2124 !important; 
     border: 2px solid #ff9100 !important; 
     border-radius: 10px !important; 
     color: white !important; 
-    margin-bottom: 0px !important; /* Raddrizzato a zero per incollarlo sotto */
-    cursor: pointer !important; /* Fa apparire la manina su tutto il blocco */
+    margin-bottom: 0px !important; 
+    cursor: pointer !important; 
     transition: transform 0.1s ease, background-color 0.2s ease;
 }}
 .stExpander:hover {{
-    background-color: #272a2e !important; /* Si schiarisce leggermente al passaggio */
+    background-color: #272a2e !important; 
 }}
 
-div[data-testid="stExpander"] details summary, 
+/* TRUCCO CSS: Nascondiamo l'icona/freccia nativa blu o grigia di Streamlit */
+div[data-testid="stExpander"] details summary svg,
+div[data-testid="stExpander"] [data-testid="stExpanderIcon"] {{
+    display: none !important;
+}}
+/* Centriamo leggermente il testo ora che non c'è l'icona nativa a sinistra */
+div[data-testid="stExpander"] details summary {{
+    padding-left: 12px !important;
+    background-color: #1f2124 !important;
+    color: white !important;
+    cursor: pointer !important;
+}}
+
 div[data-testid="stExpander"] details summary:hover, 
 div[data-testid="stExpander"] details summary:focus,
 div[data-testid="stExpander"] details summary:active,
 div[data-testid="stExpander"] details[open] summary {{
     background-color: #1f2124 !important;
     color: white !important;
-    cursor: pointer !important;
 }}
 
 .streamlit-expanderHeader {{ 
@@ -176,7 +187,6 @@ div[data-testid="stExpander"] details[open] summary {{
     font-weight: bold !important; 
     font-size: 1.0rem !important; 
     background-color: #1f2124 !important;
-    cursor: pointer !important;
 }}
 div[data-testid="stExpander"] details summary p {{
     color: white !important;
@@ -302,7 +312,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     justify-content: flex-start !important;
     gap: 15px !important;
     width: 100% !important;
-    margin-top: -4px !important; /* Sposta la riga verso l'alto per attaccarla all'evento */
+    margin-top: -4px !important;
 }}
 
 /* Bottone finto HTML */
@@ -347,7 +357,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 
 /* SEPARATORE TRA UN EVENTO E L'ALTRO */
 .separatore-evento {{
-    margin-bottom: 35px !important; /* Crea lo stacco netto prima del prossimo evento */
+    margin-bottom: 35px !important; 
     border-bottom: 1px dashed rgba(255, 145, 0, 0.15);
     padding-bottom: 10px;
 }}
@@ -523,8 +533,8 @@ else:
                         img_path = str(row.get('Locandina', '')).strip()
                         ha_locandina = img_path.startswith("http")
                         
-                        # --- SOLUZIONE VISIVA: TITOLO CON FRECCIA DI APERTURA ESPLICITA ---
-                        titolo_visivo = f"{row['Data']} - {row['Nome Evento / Raduno']}  🔽"
+                        # --- NUOVA IDEA: SIMBOLO DI TESTO '▼' (RESTA BIANCO/ARANCIONE, NON DIVENTA BLU) ---
+                        titolo_visivo = f"{row['Data']} - {row['Nome Evento / Raduno']}  ▼"
                         
                         # --- INIZIO EXPANDER DETTAGLI ---
                         with st.expander(titolo_visivo):
