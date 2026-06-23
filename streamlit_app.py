@@ -77,7 +77,7 @@ def parsing_data_biker(testo_data):
     testo = str(testo_data).lower().strip()
     if not testo or testo == "nan" or testo == "vedi nel sito" or testo == "vedi nel file": return pd.NaT
     
-    # Prova prima il match diretto del formato standard GG/MM/AAAA (es. da motoraduni.it)
+    # Prova prima il match directo del formato standard GG/MM/AAAA (es. da motoraduni.it)
     match_standard = re.search(r'\b(\d{2})/(\d{2})/(202\d)\b', testo)
     if match_standard:
         try:
@@ -186,14 +186,11 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label {{ color: white !important; }}
 
-div[data-testid="stHorizontalBlock"] {{
+/* Rimosso il grid forzato che rompeva i layout flessibili su mobile */
+.filtri-container div[data-testid="stHorizontalBlock"] {{
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 12px !important;
-    width: 100% !important;
-}}
-div[data-testid="stHorizontalBlock"] > div {{
-    max-width: 100% !important;
     width: 100% !important;
 }}
 
@@ -290,6 +287,16 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
+/* Mini-anteprima della locandina di fianco al tasto CI VADO */
+.mini-locandina-anteprima {{
+    width: 38px !important;
+    height: 38px !important;
+    object-fit: cover !important;
+    border: 2px solid #ff9100;
+    border-radius: 5px;
+    box-shadow: 0px 0px 8px rgba(255, 145, 0, 0.3);
+}}
+
 .lightbox-target {{
     position: fixed;
     top: 0;
@@ -375,8 +382,7 @@ else:
             try:
                 scheda_da_verificare = foglio_di_calcolo.worksheet("da verificare")
             except:
-                # CORREZIONE 1: rimossi gli apici da rows e cols
-                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows=100, cols=20)
+                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows="100", cols="20")
                 scheda_da_verificare.append_row(["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"])
                 
             colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
@@ -428,13 +434,8 @@ else:
                 df['Data_Date'] = df['Data'].apply(parsing_data_biker)
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
-                # =========================================================
-                # SISTEMA FILTRAGGIO EVENTI SCADUTI (SICURO ED EFFICIENTE)
-                # =========================================================
                 oggi = pd.Timestamp.now().normalize()
-                # Nascondiamo solo dall'app gli eventi passati per evitare sovraccarichi API e rallentamenti
                 df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
-                # =========================================================
 
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
                 df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
@@ -446,11 +447,14 @@ else:
                 df['Mese_Filtro'] = df['Data_Date'].apply(lambda x: f"{mesi_ita[x.month]} {x.year}" if pd.notna(x) else "Da definire")
                 opzioni_mesi = ["Tutte"] + [m for m in list(df['Mese_Filtro'].unique()) if m != "Da definire"]
 
+                # Wrapper HTML temporaneo per applicare lo stile grid solo qui e non sui tasti in basso
+                st.markdown("<div class='filtri-container'>", unsafe_allow_html=True)
                 col_regione, col_data = st.columns(2)
                 with col_regione:
                     regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
                 with col_data:
                     mese_scelto = st.selectbox("Mese", opzioni_mesi, key="sel_mese")
+                st.markdown("</div>", unsafe_allow_html=True)
 
                 ifDoc = df.copy()
                 if regione_scelta != "Tutte":
@@ -462,20 +466,19 @@ else:
                     for idx, row in ifDoc.iterrows():
                         riga_foglio_google = int(row['GSheet_Row'])
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
+                        img_path = str(row.get('Locandina', '')).strip()
+                        ha_locandina = img_path.startswith("http")
                         
                         # --- INIZIO EXPANDER DETTAGLI ---
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
-                            
-                            # CORREZIONE 2: Link Google Maps ufficiale
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
                             
                             st.markdown(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']}) <a href='{url_maps}' target='_blank' class='maps-link' title='Apri Navigatore Maps'>🗺️</a>", unsafe_allow_html=True)
                             st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
                             
-                            img_path = str(row.get('Locandina', '')).strip()
-                            if img_path.startswith("http"):
+                            if ha_locandina:
                                 st.html(f"""
                                 <a href="#zoom_{idx}">
                                     <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
@@ -506,9 +509,12 @@ else:
                                 new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
                                 
                                 if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                    # CORREZIONE 3: Singola chiamata API per aggiornare la riga per evitare rate limit
-                                    nuovi_valori = [new_title, new_data, new_luogo, new_regione, new_info, new_locandina.strip()]
-                                    scheda.update(range_name=f"A{riga_foglio_google}:F{riga_foglio_google}", values=[nuovi_valori])
+                                    scheda.update_cell(riga_foglio_google, 1, new_title)
+                                    scheda.update_cell(riga_foglio_google, 2, new_data)
+                                    scheda.update_cell(riga_foglio_google, 3, new_luogo)
+                                    scheda.update_cell(riga_foglio_google, 4, new_regione)
+                                    scheda.update_cell(riga_foglio_google, 5, new_info)
+                                    scheda.update_cell(riga_foglio_google, 6, new_locandina.strip())
                                     st.rerun()
                                     
                                 if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
@@ -516,17 +522,40 @@ else:
                                     st.rerun()
 
                         # =========================================================
-                        # PULSANTE PARTECIPAZIONE (SPRESTATO FUORI DALL'EXPANDER)
+                        # NUOVO BLOCCO AFFIANCAMENTO: TASTO + ANTEPRIMA LOCANDINA
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
                         label_btn = f"CI VADO 🔥 {conteggio}"
-                        if ha_gia_votato(chiave_voto):
-                            st.button(label_btn, key=f"btn_{idx}", disabled=True)
+                        
+                        if ha_locandina:
+                            # Se c'è la locandina, dividiamo lo spazio in proporzione 5 a 1 per tenerla minuscola
+                            col_btn, col_thumb = st.columns([5, 1])
+                            with col_btn:
+                                if ha_gia_votato(chiave_voto):
+                                    st.button(label_btn, key=f"btn_{idx}", disabled=True)
+                                else:
+                                    if st.button(label_btn, key=f"btn_{idx}"):
+                                        scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                        registra_voto(chiave_voto)
+                                        st.rerun()
+                            with col_thumb:
+                                # Stampa la miniatura cliccabile collegata direttamente al Lightbox dell'evento
+                                st.html(f"""
+                                <div style="display: flex; justify-content: center; align-items: center; height: 38px;">
+                                    <a href="#zoom_{idx}">
+                                        <img src="{img_path}" class="mini-locandina-anteprima" alt="Preview">
+                                    </a>
+                                </div>
+                                """)
                         else:
-                            if st.button(label_btn, key=f"btn_{idx}"):
-                                scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                registra_voto(chiave_voto)
-                                st.rerun()
+                            # Se non c'è la locandina, il pulsante prende tutta la riga come prima
+                            if ha_gia_votato(chiave_voto):
+                                st.button(label_btn, key=f"btn_{idx}", disabled=True)
+                            else:
+                                if st.button(label_btn, key=f"btn_{idx}"):
+                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                    registra_voto(chiave_voto)
+                                    st.rerun()
                                 
                         st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
                                     
@@ -546,8 +575,7 @@ else:
                 scheda_mc = foglio_di_calcolo.worksheet("motoclub")
                 dati_mc = scheda_mc.get_all_values()
             except:
-                # CORREZIONE 1: rimossi gli apici da rows e cols
-                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows=100, cols=10)
+                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows="100", cols="10")
                 scheda_mc.append_row(["Nome MotoClub", "Città", "Descrizione / Info", "Logo"])
                 dati_mc = [["Nome MotoClub", "Città", "Descrizione / Info", "Logo"]]
 
