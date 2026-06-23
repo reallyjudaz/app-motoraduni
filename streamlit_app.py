@@ -77,7 +77,7 @@ def parsing_data_biker(testo_data):
     testo = str(testo_data).lower().strip()
     if not testo or testo == "nan" or testo == "vedi nel sito" or testo == "vedi nel file": return pd.NaT
     
-    # Prova prima il match directo del formato standard GG/MM/AAAA
+    # Prova prima il match diretto del formato standard GG/MM/AAAA (es. da motoraduni.it)
     match_standard = re.search(r'\b(\d{2})/(\d{2})/(202\d)\b', testo)
     if match_standard:
         try:
@@ -147,31 +147,27 @@ st.markdown(f"""
 .titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
 .sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
 
-/* STRUTTURA TENDINA EVENTO NASCONDENDO IL TRIANGOLO NATIVO */
 .stExpander {{ 
     background-color: #1f2124 !important; 
     border: 2px solid #ff9100 !important; 
     border-radius: 10px !important; 
     color: white !important; 
-    margin-bottom: 0px !important; 
-    cursor: pointer !important; 
-    transition: transform 0.1s ease, background-color 0.2s ease;
-}}
-.stExpander:hover {{
-    background-color: #272a2e !important; 
+    margin-bottom: 4px !important;
 }}
 
-/* Nascondiamo l'icona/freccia nativa blu o grigia di Streamlit */
+/* TRUCCO CSS: Nascondiamo la freccia predefinita e curiamo l'hover */
 div[data-testid="stExpander"] details summary svg,
 div[data-testid="stExpander"] [data-testid="stExpanderIcon"] {{
     display: none !important;
 }}
 div[data-testid="stExpander"] details summary {{
-    padding-left: 12px !important;
+    padding-left: 15px !important;
     background-color: #1f2124 !important;
     color: white !important;
     cursor: pointer !important;
 }}
+
+div[data-testid="stExpander"] details summary, 
 div[data-testid="stExpander"] details summary:hover, 
 div[data-testid="stExpander"] details summary:focus,
 div[data-testid="stExpander"] details summary:active,
@@ -181,7 +177,7 @@ div[data-testid="stExpander"] details[open] summary {{
 }}
 
 .streamlit-expanderHeader {{ 
-    color: white !important; 
+    color: #ff9100 !important; 
     font-weight: bold !important; 
     font-size: 1.0rem !important; 
     background-color: #1f2124 !important;
@@ -192,7 +188,7 @@ div[data-testid="stExpander"] details summary p {{
     margin-bottom: 0px !important;
 }}
 
-/* AGGIUNGE LA SCRITTA "CLICK HERE FOR INFO" IN ARANCIONE SOTTO IL TITOLO DELL'EVENTO */
+/* AGGIUNGE LA SCRITTA "CLICK HERE FOR INFO" SOTTO AL TITOLO */
 div[data-testid="stExpander"] details summary p::after {{
     content: "CLICK HERE FOR INFO";
     display: block;
@@ -202,37 +198,36 @@ div[data-testid="stExpander"] details summary p::after {{
     margin-top: 4px;
     letter-spacing: 1px;
 }}
-/* SE L'EVENTO E' APERTO, CAMBIA LA SCRITTA */
+/* SE APERTO, CAMBIA IN "CHIUDI INFO" */
 div[data-testid="stExpander"] details[open] summary p::after {{
     content: "CHIUDI INFO";
     color: #8a8d93;
 }}
 
-/* FORZA LE COLONNE DEI FILTRI A STARE SULLA STESSA RIGA SENZA SCROLL ORIZZONTALE */
-div[data-testid="stHorizontalBlock"] {{
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    gap: 10px !important;
-    width: 100% !important;
-}}
-div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
-    width: 100% !important;
-    flex: 1 1 0px !important; /* Si adatta perfettamente senza debordare */
-    min-width: 0 !important; /* Impedisce l'overflow sui display piccoli */
-}}
-
-/* Stile nativo pulsante Streamlit (usato quando NON c'è la locandina) */
-div[data-testid="stButton"] button {{ 
+/* STILE NATIVO DEI PULSANTI (SE USATI DIRETTAMENTE) */
+div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
     background-color: #ff9100 !important; 
     color: black !important; 
     font-weight: bold !important; 
     font-family: 'Special Elite', cursive !important; 
     border-radius: 5px !important; 
-    height: 42px !important; 
+    height: 38px !important; 
+    width: 100%;
 }}
 
 label, .stTextInput label, .stTextArea label {{ color: white !important; }}
+
+/* IL TUO CSS ORIGINALE PER I FILTRI - RIMANE INTATTO */
+div[data-testid="stHorizontalBlock"] {{
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+}}
+div[data-testid="stHorizontalBlock"] > div {{
+    max-width: 100% !important;
+    width: 100% !important;
+}}
 
 div[data-testid="stSelectbox"] > label {{
     color: #ff9100 !important;
@@ -327,61 +322,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
-/* CONTENITORE IN LINEA COMPATTATO */
-.riga-pulsante-anteprima {{
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 15px !important;
-    width: 100% !important;
-    margin-top: -4px !important;
-}}
-
-.html-btn-civado {{
-    background-color: #ff9100 !important;
-    color: black !important;
-    font-weight: bold !important;
-    font-family: 'Special Elite', cursive !important;
-    border-radius: 5px !important;
-    height: 42px !important;
-    padding: 0px 25px !important;
-    font-size: 0.95rem !important;
-    border: none !important;
-    cursor: pointer !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-decoration: none !important;
-}}
-.html-btn-civado:hover {{
-    background-color: #e07f00 !important;
-}}
-.html-btn-disabilitato {{
-    background-color: #555555 !important;
-    color: #bbbbbb !important;
-    cursor: not-allowed !important;
-}}
-
-.locandina-anteprima-rettangolare {{
-    height: 55px !important;
-    width: auto !important;
-    max-width: 90px !important;
-    object-fit: contain !important;
-    border: 2px solid #ff9100;
-    border-radius: 5px;
-    box-shadow: 0px 0px 10px rgba(255, 145, 0, 0.4);
-    transition: transform 0.1s;
-}}
-.locandina-anteprima-rettangolare:hover {{
-    transform: scale(1.05);
-}}
-
-.separatore-evento {{
-    margin-bottom: 35px !important; 
-    border-bottom: 1px dashed rgba(255, 145, 0, 0.15);
-    padding-bottom: 10px;
-}}
-
 .lightbox-target {{
     position: fixed;
     top: 0;
@@ -430,6 +370,55 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 .lightbox-close-btn:hover {{
     background-color: #e07f00 !important;
 }}
+
+/* CSS PER ALLINEARE BOTTONE "CI VADO" E MINIATURA SULLA STESSA RIGA */
+.riga-pulsante-anteprima {{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 15px !important;
+    width: 100% !important;
+    margin-top: 2px !important;
+}}
+
+.html-btn-civado {{
+    background-color: #ff9100 !important;
+    color: black !important;
+    font-weight: bold !important;
+    font-family: 'Special Elite', cursive !important;
+    border-radius: 5px !important;
+    height: 38px !important;
+    padding: 0px 25px !important;
+    font-size: 0.95rem !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+}}
+.html-btn-civado:hover {{
+    background-color: #e07f00 !important;
+}}
+.html-btn-disabilitato {{
+    background-color: #555555 !important;
+    color: #bbbbbb !important;
+    cursor: not-allowed !important;
+}}
+
+.locandina-anteprima-rettangolare {{
+    height: 45px !important;
+    width: auto !important;
+    max-width: 90px !important;
+    object-fit: contain !important;
+    border: 2px solid #ff9100;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(255, 145, 0, 0.4);
+    transition: transform 0.1s;
+}}
+.locandina-anteprima-rettangolare:hover {{
+    transform: scale(1.05);
+}}
 </style>
 
 <div class="online-counter">
@@ -467,7 +456,7 @@ else:
             try:
                 scheda_da_verificare = foglio_di_calcolo.worksheet("da verificare")
             except:
-                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows="100", cols="20")
+                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows=100, cols=20)
                 scheda_da_verificare.append_row(["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"])
                 
             colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
@@ -482,12 +471,15 @@ else:
             else:
                 df = pd.DataFrame(columns=colonne_esatte)
 
+            # --- FORM UTENTE ---
             with st.expander("➕ AGGIUNGI EVENTO"):
                 if st.session_state["evento_inviato"]:
                     st.markdown("""
                     <div style='background-color: #1f2124; border: 2px solid #ff9100; padding: 15px; border-radius: 8px; text-align: center; color: white; font-family: "Special Elite", cursive; margin-bottom: 20px;'>
                         🔥 Grazie per la tua segnalazione!<br>
-                        Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.
+                        Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.<br><br>
+                        Per modifiche o comunicazioni urgenti puoi scrivere a:<br> 
+                        <strong style='color: #ff9100;'>ironandrubbercustom@gmail.com</strong>
                     </div>
                     """, unsafe_allow_html=True)
                     if st.button("Aggiungi un altro evento"):
@@ -516,8 +508,12 @@ else:
                 df['Data_Date'] = df['Data'].apply(parsing_data_biker)
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
+                # =========================================================
+                # SISTEMA FILTRAGGIO EVENTI SCADUTI
+                # =========================================================
                 oggi = pd.Timestamp.now().normalize()
                 df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
+
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
                 df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
@@ -544,13 +540,12 @@ else:
                     for idx, row in ifDoc.iterrows():
                         riga_foglio_google = int(row['GSheet_Row'])
                         chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
+                        
                         img_path = str(row.get('Locandina', '')).strip()
                         ha_locandina = img_path.startswith("http")
                         
-                        # --- TITOLO SENZA NESSUN SIMBOLO (La scritta "CLICK HERE" è gestita dal CSS) ---
-                        titolo_visivo = f"{row['Data']} - {row['Nome Evento / Raduno']}"
-                        
-                        with st.expander(titolo_visivo):
+                        # --- INIZIO EXPANDER DETTAGLI CON TITOLO PULITO ---
+                        with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
@@ -596,6 +591,7 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
+                        # --- LIGHTBOX GLOBALE ---
                         if ha_locandina:
                             st.html(f"""
                             <div class="lightbox-target" id="zoom_{idx}">
@@ -604,6 +600,9 @@ else:
                             </div>
                             """)
 
+                        # =========================================================
+                        # PULSANTE PARTECIPAZIONE (IN LINEA SE C'E LA LOCANDINA)
+                        # =========================================================
                         conteggio = int(row['Partecipanti'])
                         
                         if ha_locandina:
@@ -631,14 +630,14 @@ else:
                         else:
                             label_btn = f"CI VADO 🔥 {conteggio}"
                             if ha_gia_votato(chiave_voto):
-                                st.button(label_btn, key=f"btn_{idx}", disabled=True, use_container_width=True)
+                                st.button(label_btn, key=f"btn_{idx}", disabled=True)
                             else:
-                                if st.button(label_btn, key=f"btn_{idx}", use_container_width=True):
+                                if st.button(label_btn, key=f"btn_{idx}"):
                                     scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                                     registra_voto(chiave_voto)
                                     st.rerun()
-                        
-                        st.markdown("<div class='separatore-evento'></div>", unsafe_allow_html=True)
+                                
+                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
                                     
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
@@ -656,7 +655,7 @@ else:
                 scheda_mc = foglio_di_calcolo.worksheet("motoclub")
                 dati_mc = scheda_mc.get_all_values()
             except:
-                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows="100", cols="10")
+                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows=100, cols=10)
                 scheda_mc.append_row(["Nome MotoClub", "Città", "Descrizione / Info", "Logo"])
                 dati_mc = [["Nome MotoClub", "Città", "Descrizione / Info", "Logo"]]
 
@@ -689,7 +688,7 @@ else:
                     </div>
                     """)
             else:
-                st.info("Nessun MotoClub registrato al momento.")
+                st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
 
         # =========================================================
         # SCHERMATA 3: ADMIN
