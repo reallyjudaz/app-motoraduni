@@ -147,12 +147,18 @@ st.markdown(f"""
 .titolo-gotico {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 2.6rem !important; margin-top: -10px !important; }}
 .sottotitolo {{ font-family: 'UnifrakturMaguntia', cursive !important; text-align: center; color: #ff9100 !important; font-size: 1.4rem !important; margin-bottom: 20px !important; }}
 
+/* STRUTTURA TENDINA EVENTO OTTIMIZZATA ED EFFETTO CLICK */
 .stExpander {{ 
     background-color: #1f2124 !important; 
     border: 2px solid #ff9100 !important; 
     border-radius: 10px !important; 
     color: white !important; 
-    margin-bottom: 4px !important;
+    margin-bottom: 0px !important; /* Raddrizzato a zero per incollarlo sotto */
+    cursor: pointer !important; /* Fa apparire la manina su tutto il blocco */
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}}
+.stExpander:hover {{
+    background-color: #272a2e !important; /* Si schiarisce leggermente al passaggio */
 }}
 
 div[data-testid="stExpander"] details summary, 
@@ -162,6 +168,7 @@ div[data-testid="stExpander"] details summary:active,
 div[data-testid="stExpander"] details[open] summary {{
     background-color: #1f2124 !important;
     color: white !important;
+    cursor: pointer !important;
 }}
 
 .streamlit-expanderHeader {{ 
@@ -169,9 +176,11 @@ div[data-testid="stExpander"] details[open] summary {{
     font-weight: bold !important; 
     font-size: 1.0rem !important; 
     background-color: #1f2124 !important;
+    cursor: pointer !important;
 }}
 div[data-testid="stExpander"] details summary p {{
     color: white !important;
+    width: 100% !important;
 }}
 
 /* Stile nativo pulsante Streamlit (usato quando NON c'è la locandina) */
@@ -286,17 +295,17 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     text-align: center;
 }}
 
-/* CONTENITORE IN LINEA PER CI VADO + ANTEPRIMA LOCANDINA */
+/* CONTENITORE IN LINEA COMPATTATO */
 .riga-pulsante-anteprima {{
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 15px !important; /* Spazio preciso tra bottone e locandina */
+    gap: 15px !important;
     width: 100% !important;
-    margin-top: 5px !important;
+    margin-top: -4px !important; /* Sposta la riga verso l'alto per attaccarla all'evento */
 }}
 
-/* Bottone finto in puro HTML/CSS che imita Streamlit al 100% */
+/* Bottone finto HTML */
 .html-btn-civado {{
     background-color: #ff9100 !important;
     color: black !important;
@@ -322,7 +331,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     cursor: not-allowed !important;
 }}
 
-/* Nuova dimensione locandina: cresciuta a 55px e resa rettangolare morbida */
 .locandina-anteprima-rettangolare {{
     height: 55px !important;
     width: auto !important;
@@ -335,6 +343,13 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 }}
 .locandina-anteprima-rettangolare:hover {{
     transform: scale(1.05);
+}}
+
+/* SEPARATORE TRA UN EVENTO E L'ALTRO */
+.separatore-evento {{
+    margin-bottom: 35px !important; /* Crea lo stacco netto prima del prossimo evento */
+    border-bottom: 1px dashed rgba(255, 145, 0, 0.15);
+    padding-bottom: 10px;
 }}
 
 .lightbox-target {{
@@ -508,8 +523,11 @@ else:
                         img_path = str(row.get('Locandina', '')).strip()
                         ha_locandina = img_path.startswith("http")
                         
+                        # --- SOLUZIONE VISIVA: TITOLO CON FRECCIA DI APERTURA ESPLICITA ---
+                        titolo_visivo = f"{row['Data']} - {row['Nome Evento / Raduno']}  🔽"
+                        
                         # --- INIZIO EXPANDER DETTAGLI ---
-                        with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
+                        with st.expander(titolo_visivo):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
                             url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
@@ -555,7 +573,7 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                        # --- LIGHTBOX GLOBALE ACCESSIBILE DA ENTRAMBE LE IMMAGINI ---
+                        # Lightbox globale per lo zoom della locandina
                         if ha_locandina:
                             st.html(f"""
                             <div class="lightbox-target" id="zoom_{idx}">
@@ -564,15 +582,11 @@ else:
                             </div>
                             """)
 
-                        # =========================================================
-                        # RISOLUZIONE ACCANTO: BLOCCO INIEZIONE FLEXBOX
-                        # =========================================================
+                        # --- BLOCCO BOTTONE + MINIATURA ATTACCATI ---
                         conteggio = int(row['Partecipanti'])
                         
                         if ha_locandina:
-                            # Se c'è la locandina, usiamo un unico blocco HTML per incollarli vicini
                             gia_votato = ha_gia_votato(chiave_voto)
-                            
                             if gia_votato:
                                 html_bottone = f'<div class="html-btn-civado html-btn-disabilitato">CI VADO 🔥 {conteggio}</div>'
                             else:
@@ -587,7 +601,6 @@ else:
                             </div>
                             """)
                             
-                            # Intercettiamo il voto passato tramite URL (in modo nativo e sicuro)
                             if f"vota" in st.query_params and st.query_params["vota"] == str(idx):
                                 if not gia_votato:
                                     scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
@@ -595,7 +608,6 @@ else:
                                     st.query_params.clear()
                                     st.rerun()
                         else:
-                            # Se non c'è la locandina, usiamo il bottone classico a tutta riga
                             label_btn = f"CI VADO 🔥 {conteggio}"
                             if ha_gia_votato(chiave_voto):
                                 st.button(label_btn, key=f"btn_{idx}", disabled=True, use_container_width=True)
@@ -604,8 +616,9 @@ else:
                                     scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                                     registra_voto(chiave_voto)
                                     st.rerun()
-                                
-                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+                        
+                        # CREA LO SPAZIO GRANDE SOTTO PER SEPARARE GLI EVENTI
+                        st.markdown("<div class='separatore-evento'></div>", unsafe_allow_html=True)
                                     
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
