@@ -77,7 +77,7 @@ def parsing_data_biker(testo_data):
     testo = str(testo_data).lower().strip()
     if not testo or testo == "nan" or testo == "vedi nel sito" or testo == "vedi nel file": return pd.NaT
     
-    # Prova prima il match directo del formato standard GG/MM/AAAA (es. da motoraduni.it)
+    # Prova prima il match directo del formato standard GG/MM/AAAA
     match_standard = re.search(r'\b(\d{2})/(\d{2})/(202\d)\b', testo)
     if match_standard:
         try:
@@ -161,19 +161,17 @@ st.markdown(f"""
     background-color: #272a2e !important; 
 }}
 
-/* TRUCCO CSS: Nascondiamo l'icona/freccia nativa blu o grigia di Streamlit */
+/* Nascondiamo l'icona/freccia nativa blu o grigia di Streamlit */
 div[data-testid="stExpander"] details summary svg,
 div[data-testid="stExpander"] [data-testid="stExpanderIcon"] {{
     display: none !important;
 }}
-/* Centriamo leggermente il testo ora che non c'è l'icona nativa a sinistra */
 div[data-testid="stExpander"] details summary {{
     padding-left: 12px !important;
     background-color: #1f2124 !important;
     color: white !important;
     cursor: pointer !important;
 }}
-
 div[data-testid="stExpander"] details summary:hover, 
 div[data-testid="stExpander"] details summary:focus,
 div[data-testid="stExpander"] details summary:active,
@@ -183,7 +181,7 @@ div[data-testid="stExpander"] details[open] summary {{
 }}
 
 .streamlit-expanderHeader {{ 
-    color: #ff9100 !important; 
+    color: white !important; 
     font-weight: bold !important; 
     font-size: 1.0rem !important; 
     background-color: #1f2124 !important;
@@ -191,6 +189,36 @@ div[data-testid="stExpander"] details[open] summary {{
 div[data-testid="stExpander"] details summary p {{
     color: white !important;
     width: 100% !important;
+    margin-bottom: 0px !important;
+}}
+
+/* AGGIUNGE LA SCRITTA "CLICK HERE FOR INFO" IN ARANCIONE SOTTO IL TITOLO DELL'EVENTO */
+div[data-testid="stExpander"] details summary p::after {{
+    content: "CLICK HERE FOR INFO";
+    display: block;
+    color: #ff9100;
+    font-family: 'Special Elite', cursive;
+    font-size: 0.75rem;
+    margin-top: 4px;
+    letter-spacing: 1px;
+}}
+/* SE L'EVENTO E' APERTO, CAMBIA LA SCRITTA */
+div[data-testid="stExpander"] details[open] summary p::after {{
+    content: "CHIUDI INFO";
+    color: #8a8d93;
+}}
+
+/* FORZA LE COLONNE DEI FILTRI A STARE SULLA STESSA RIGA ANCHE SU MOBILE */
+div[data-testid="stHorizontalBlock"] {{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 15px !important;
+}}
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+    width: 50% !important;
+    flex: 1 1 50% !important;
+    min-width: 50% !important;
 }}
 
 /* Stile nativo pulsante Streamlit (usato quando NON c'è la locandina) */
@@ -204,13 +232,6 @@ div[data-testid="stButton"] button {{
 }}
 
 label, .stTextInput label, .stTextArea label {{ color: white !important; }}
-
-.filtri-container div[data-testid="stHorizontalBlock"] {{
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px !important;
-    width: 100% !important;
-}}
 
 div[data-testid="stSelectbox"] > label {{
     color: #ff9100 !important;
@@ -315,7 +336,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     margin-top: -4px !important;
 }}
 
-/* Bottone finto HTML */
 .html-btn-civado {{
     background-color: #ff9100 !important;
     color: black !important;
@@ -355,7 +375,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     transform: scale(1.05);
 }}
 
-/* SEPARATORE TRA UN EVENTO E L'ALTRO */
 .separatore-evento {{
     margin-bottom: 35px !important; 
     border-bottom: 1px dashed rgba(255, 145, 0, 0.15);
@@ -462,15 +481,12 @@ else:
             else:
                 df = pd.DataFrame(columns=colonne_esatte)
 
-            # --- FORM UTENTE ---
             with st.expander("➕ AGGIUNGI EVENTO"):
                 if st.session_state["evento_inviato"]:
                     st.markdown("""
                     <div style='background-color: #1f2124; border: 2px solid #ff9100; padding: 15px; border-radius: 8px; text-align: center; color: white; font-family: "Special Elite", cursive; margin-bottom: 20px;'>
                         🔥 Grazie per la tua segnalazione!<br>
-                        Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.<br><br>
-                        Per modifiche o comunicazioni urgenti puoi scrivere a:<br> 
-                        <strong style='color: #ff9100;'>ironandrubbercustom@gmail.com</strong>
+                        Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.
                     </div>
                     """, unsafe_allow_html=True)
                     if st.button("Aggiungi un altro evento"):
@@ -501,7 +517,6 @@ else:
                 
                 oggi = pd.Timestamp.now().normalize()
                 df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
-
                 df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
                 df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
@@ -512,13 +527,11 @@ else:
                 df['Mese_Filtro'] = df['Data_Date'].apply(lambda x: f"{mesi_ita[x.month]} {x.year}" if pd.notna(x) else "Da definire")
                 opzioni_mesi = ["Tutte"] + [m for m in list(df['Mese_Filtro'].unique()) if m != "Da definire"]
 
-                st.markdown("<div class='filtri-container'>", unsafe_allow_html=True)
                 col_regione, col_data = st.columns(2)
                 with col_regione:
                     regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
                 with col_data:
                     mese_scelto = st.selectbox("Mese", opzioni_mesi, key="sel_mese")
-                st.markdown("</div>", unsafe_allow_html=True)
 
                 ifDoc = df.copy()
                 if regione_scelta != "Tutte":
@@ -533,10 +546,9 @@ else:
                         img_path = str(row.get('Locandina', '')).strip()
                         ha_locandina = img_path.startswith("http")
                         
-                        # --- NUOVA IDEA: SIMBOLO DI TESTO '▼' (RESTA BIANCO/ARANCIONE, NON DIVENTA BLU) ---
-                        titolo_visivo = f"{row['Data']} - {row['Nome Evento / Raduno']}  ▼"
+                        # --- TITOLO SENZA NESSUN SIMBOLO (La scritta "CLICK HERE" è gestita dal CSS) ---
+                        titolo_visivo = f"{row['Data']} - {row['Nome Evento / Raduno']}"
                         
-                        # --- INIZIO EXPANDER DETTAGLI ---
                         with st.expander(titolo_visivo):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
@@ -583,7 +595,6 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                        # Lightbox globale per lo zoom della locandina
                         if ha_locandina:
                             st.html(f"""
                             <div class="lightbox-target" id="zoom_{idx}">
@@ -592,7 +603,6 @@ else:
                             </div>
                             """)
 
-                        # --- BLOCCO BOTTONE + MINIATURA ATTACCATI ---
                         conteggio = int(row['Partecipanti'])
                         
                         if ha_locandina:
@@ -627,7 +637,6 @@ else:
                                     registra_voto(chiave_voto)
                                     st.rerun()
                         
-                        # CREA LO SPAZIO GRANDE SOTTO PER SEPARARE GLI EVENTI
                         st.markdown("<div class='separatore-evento'></div>", unsafe_allow_html=True)
                                     
                 else:
@@ -679,7 +688,7 @@ else:
                     </div>
                     """)
             else:
-                st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
+                st.info("Nessun MotoClub registrato al momento.")
 
         # =========================================================
         # SCHERMATA 3: ADMIN
