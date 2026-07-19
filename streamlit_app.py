@@ -52,7 +52,7 @@ URL_APP = "https://app-motoraduni-6hqxxahyypkhyxmqmpsk2v.streamlit.app/"
 st.markdown("""
 <style>
 .stApp { background-color: #161719; }
-.riga-pulsante-anteprima { display: flex !important; align-items: center !important; gap: 10px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+.riga-pulsante-anteprima { display: flex !important; align-items: center !important; gap: 10px !important; margin-top: 10px !important; }
 .html-btn-civado { background-color: #ff9100 !important; color: black !important; font-weight: bold !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; padding: 0px 20px !important; text-decoration: none !important; display: flex; align-items: center; justify-content: center; }
 .html-btn-condividi { background-color: #333333 !important; color: white !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; width: 45px !important; padding: 0px !important; border: none !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 1.2rem !important; }
 .locandina-anteprima-rettangolare { height: 38px !important; width: auto !important; max-width: 70px !important; object-fit: contain !important; border: 2px solid #ff9100; border-radius: 5px; }
@@ -71,6 +71,17 @@ if gc:
         df['Data_Date'] = df['Data'].apply(parsing_data_biker)
         df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= pd.Timestamp.now().normalize())]
         
+        # Script globale inserito una sola volta
+        st.html("""
+        <script>
+        function condividiEvento(titolo) {
+            if (navigator.share) { 
+                navigator.share({ title: titolo, url: 'https://app-motoraduni-6hqxxahyypkhyxmqmpsk2v.streamlit.app/' }); 
+            } else { alert('Condivisione non supportata'); }
+        }
+        </script>
+        """)
+        
         for idx, row in df.iterrows():
             riga_foglio_google = int(row['GSheet_Row'])
             chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
@@ -83,16 +94,9 @@ if gc:
                     html_bottone = f'<div class="html-btn-civado" style="background:#555!important">CI VADO 🔥 {row.get("Partecipanti", 0)}</div>' if gia_votato else f'<a href="?vota={idx}" target="_self" class="html-btn-civado">CI VADO 🔥 {row.get("Partecipanti", 0)}</a>'
                     
                     st.html(f"""
-                    <script>
-                    function condividiEvento(titolo) {{
-                        if (navigator.share) {{ 
-                            navigator.share({{ title: titolo, url: '{URL_APP}' }}); 
-                        }} else {{ alert('Condivisione non supportata'); }}
-                    }}
-                    </script>
                     <div class="riga-pulsante-anteprima">
                         {html_bottone}
-                        <button class="html-btn-condividi" onclick="condivisiEvento('{row['Nome Evento / Raduno']}')">🔗</button>
+                        <button class="html-btn-condividi" onclick="condividiEvento('{row['Nome Evento / Raduno']}')">🔗</button>
                         <a href="{img_path}" target="_blank"><img src="{img_path}" class="locandina-anteprima-rettangolare"></a>
                     </div>
                     """)
