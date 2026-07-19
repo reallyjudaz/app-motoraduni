@@ -49,13 +49,13 @@ NOME_DEL_FOGLIO = "app motoraduni"
 URL_APP = "https://app-motoraduni-6hqxxahyypkhyxmqmpsk2v.streamlit.app/"
 
 # --- CSS ---
-st.markdown(f"""
+st.markdown("""
 <style>
-.stApp {{ background-color: #161719; }}
-.riga-pulsante-anteprima {{ display: flex !important; align-items: center !important; gap: 10px !important; margin-top: 5px !important; }}
-.html-btn-civado {{ background-color: #ff9100 !important; color: black !important; font-weight: bold !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; padding: 0px 20px !important; text-decoration: none !important; display: flex; align-items: center; justify-content: center; }}
-.html-btn-condividi {{ background-color: #333333 !important; color: white !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; width: 45px !important; padding: 0px !important; border: none !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 1.2rem !important; }}
-.locandina-anteprima-rettangolare {{ height: 38px !important; width: auto !important; max-width: 70px !important; object-fit: contain !important; border: 2px solid #ff9100; border-radius: 5px; }}
+.stApp { background-color: #161719; }
+.riga-pulsante-anteprima { display: flex !important; align-items: center !important; gap: 10px !important; margin-top: 10px !important; margin-bottom: 10px !important; }
+.html-btn-civado { background-color: #ff9100 !important; color: black !important; font-weight: bold !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; padding: 0px 20px !important; text-decoration: none !important; display: flex; align-items: center; justify-content: center; }
+.html-btn-condividi { background-color: #333333 !important; color: white !important; font-family: 'Special Elite', cursive !important; border-radius: 5px !important; height: 38px !important; width: 45px !important; padding: 0px !important; border: none !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 1.2rem !important; }
+.locandina-anteprima-rettangolare { height: 38px !important; width: auto !important; max-width: 70px !important; object-fit: contain !important; border: 2px solid #ff9100; border-radius: 5px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -87,7 +87,7 @@ if gc:
                     function condividiEvento(titolo) {{
                         if (navigator.share) {{ 
                             navigator.share({{ title: titolo, url: '{URL_APP}' }}); 
-                        }} else {{ alert('Condivisione non supportata dal tuo browser'); }}
+                        }} else {{ alert('Condivisione non supportata'); }}
                     }}
                     </script>
                     <div class="riga-pulsante-anteprima">
