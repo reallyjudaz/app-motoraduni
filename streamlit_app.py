@@ -209,399 +209,279 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
     background-color: #ff9100 !important; 
     color: black !important; 
     font-weight: bold !important; 
-    font-family: 'Special Elite', cursive !important; 
+    font-family: 'Special Elite', cursive !important;
+    border: 2px solid #ff9100 !important; 
     border-radius: 5px !important; 
-    height: 38px !important; 
-    width: 100%;
+    width: 100% !important; 
+    padding: 10px !important;
+    transition: all 0.2s;
+}}
+div[data-testid="stButton"] button:hover, div[data-testid="stFormSubmitButton"] button:hover {{ 
+    background-color: transparent !important; 
+    color: #ff9100 !important; 
+    border: 2px solid #ff9100 !important; 
 }}
 
-label, .stTextInput label, .stTextArea label {{ color: white !important; }}
+/* NASCONDI RADIO LABEL E LABEL SELECT */
+.stRadio > label {{ display: none !important; }}
+.stSelectbox > label {{ display: none !important; }}
 
-/* IL TUO CSS ORIGINALE PER I FILTRI - RIMANE INTATTO */
-div[data-testid="stHorizontalBlock"] {{
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px !important;
-    width: 100% !important;
-}}
-div[data-testid="stHorizontalBlock"] > div {{
-    max-width: 100% !important;
-    width: 100% !important;
-}}
+/* INFORMAZIONI EVENTO (TESTO BIANCO) */
+.info-evento {{ color: white !important; line-height: 1.4 !important; font-size: 0.95rem; }}
 
-div[data-testid="stSelectbox"] > label {{
-    color: #ff9100 !important;
-    font-family: 'Special Elite', cursive !important;
-    font-size: 0.85rem !important;
-    margin-bottom: 2px !important;
-}}
-div[data-testid="stSelectbox"] div[data-baseweb="select"] {{
-    background-color: #ffffff !important;
-    border: 2px solid #ff9100 !important;
-    border-radius: 5px !important;
-}}
-div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
-    color: #000000 !important;
-    font-family: 'Special Elite', cursive !important;
-    font-size: 0.85rem !important;
-}}
-
-.card-mc {{
-    background-color: #1f2124;
-    border: 2px solid #ff9100;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 20px;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}}
-.titolo-mc {{
-    color: #ff9100;
-    font-family: 'Special Elite', cursive;
-    font-size: 1.3rem;
-    margin-bottom: 2px;
-}}
-.citta-mc {{
-    color: #00ffcc;
-    font-size: 0.9rem;
-    font-family: 'Special Elite', cursive;
-    margin-bottom: 5px;
-}}
-.info-mc {{
-    font-size: 0.95rem;
-    line-height: 1.4;
-    margin-bottom: 5px;
-}}
-.logo-container-mc {{
-    text-align: center;
-    margin-top: 5px;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(255, 145, 0, 0.3);
-}}
-.logo-standard-mc {{
-    width: 130px !important;
-    height: 130px !important;
-    object-fit: contain !important;
-    border-radius: 5px;
-    background-color: transparent;
-}}
-
-.maps-link {{
-    text-decoration: none !important;
-    font-size: 1.1rem;
-    margin-left: 6px;
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
-    transition: transform 0.2s;
-}}
-.maps-link:hover {{
-    transform: scale(1.2);
-}}
-
-.locandina-cliccabile {{
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 145, 0, 0.4);
-    cursor: pointer;
-    transition: transform 0.2s;
-}}
-.locandina-cliccabile:hover {{
-    transform: scale(1.01);
-}}
-.testo-aiuto-zoom {{
-    color: #8a8d93;
-    font-size: 0.8rem;
-    font-family: 'Special Elite', cursive;
-    margin-top: -8px;
-    margin-bottom: 15px;
-    text-align: center;
-}}
-
-.lightbox-target {{
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 0;
-    height: 100%;
-    background: rgba(10, 10, 11, 0.98);
-    opacity: 0;
-    overflow: hidden;
-    z-index: 100000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.2s ease;
-}}
-.lightbox-target:target {{
-    width: 100%;
-    opacity: 1;
-    bottom: 0;
-    right: 0;
-    left: 0;
-}}
-.lightbox-target img {{
-    max-width: 98% !important;
-    max-height: 85vh !important;
-    object-fit: contain !important;
-    border: 2px solid #ff9100;
-    border-radius: 6px;
-    box-shadow: 0px 0px 25px rgba(255, 145, 0, 0.5);
-}}
-.lightbox-close-btn {{
-    margin-top: 15px;
-    background-color: #ff9100 !important;
-    color: black !important;
-    font-family: 'Special Elite', cursive !important;
-    font-weight: bold !important;
-    text-decoration: none !important;
-    padding: 8px 30px;
-    border-radius: 5px;
-    font-size: 0.95rem;
-    letter-spacing: 1px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
-    text-align: center;
-}}
-.lightbox-close-btn:hover {{
-    background-color: #e07f00 !important;
-}}
-
-/* CSS PER ALLINEARE BOTTONE "CI VADO" E MINIATURA SULLA STESSA RIGA */
+/* LAYOUT PULSANTI PER GLI EVENTI (IL NOSTRO HTML) */
 .riga-pulsante-anteprima {{
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 15px !important;
-    width: 100% !important;
-    margin-top: 2px !important;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
 }}
-
+.locandina-anteprima-rettangolare {{
+    width: 140px; 
+    height: 70px;
+    object-fit: cover;
+    object-position: center 20%;
+    border-radius: 8px;
+    border: 2px solid #333;
+    cursor: pointer;
+}}
+/* STILE BOTTONE "CI VADO" HTML */
 .html-btn-civado {{
-    background-color: #ff9100 !important;
-    color: black !important;
-    font-weight: bold !important;
-    font-family: 'Special Elite', cursive !important;
+    background-color: #ff9100 !important; 
+    color: black !important; 
+    font-weight: bold !important; 
+    border: 2px solid #ff9100 !important; 
     border-radius: 5px !important;
     height: 38px !important;
-    padding: 0px 25px !important;
+    padding: 0px 20px !important;
     font-size: 0.95rem !important;
-    border: none !important;
+    font-family: 'Special Elite', cursive !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-decoration: none !important;
+    transition: all 0.2s;
 }}
 .html-btn-civado:hover {{
-    background-color: #e07f00 !important;
+    background-color: transparent !important; 
+    color: #ff9100 !important; 
 }}
 .html-btn-disabilitato {{
-    background-color: #555555 !important;
-    color: #bbbbbb !important;
-    cursor: not-allowed !important;
+    background-color: #3a3b3c !important; 
+    color: #8a8d93 !important; 
+    border: 2px solid #3a3b3c !important; 
+    cursor: not-allowed !important; 
+}}
+.html-btn-disabilitato:hover {{
+    background-color: #3a3b3c !important; 
+    color: #8a8d93 !important; 
 }}
 
-.locandina-anteprima-rettangolare {{
-    height: 45px !important;
-    width: auto !important;
-    max-width: 90px !important;
-    object-fit: contain !important;
-    border: 2px solid #ff9100;
-    border-radius: 5px;
-    box-shadow: 0px 0px 10px rgba(255, 145, 0, 0.4);
-    transition: transform 0.1s;
+/* STILE BOTTONE CONDIVIDI */
+.html-btn-condividi {{
+    background-color: transparent !important;
+    color: #00ffcc !important;
+    border: 2px solid #00ffcc !important;
+    border-radius: 5px !important;
+    height: 38px !important;
+    padding: 0px 15px !important;
+    font-size: 0.90rem !important;
+    font-family: 'Special Elite', cursive !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    transition: all 0.2s;
 }}
-.locandina-anteprima-rettangolare:hover {{
-    transform: scale(1.05);
+.html-btn-condividi:hover {{
+    background-color: #00ffcc !important;
+    color: black !important;
 }}
+
+/* GESTIONE POPUP (MODAL PER IMMAGINI E AVVISI) */
+.overlay {{
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85); z-index: 9999;
+    display: flex; justify-content: center; align-items: center;
+}}
+.popup-img {{ max-width: 95vw; max-height: 90vh; border-radius: 10px; border: 3px solid #ff9100; }}
+.close-btn {{ position: absolute; top: 20px; right: 30px; font-size: 40px; color: #ff9100; text-decoration: none; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 5px; }}
+
+.bottone-sottile {{
+    display: block; width: 100%; text-align: center; background-color: #1f2124; 
+    color: #ff9100; border: 1px solid #ff9100; border-radius: 5px; 
+    padding: 5px 0; margin-top: 15px; font-family: 'Special Elite', cursive; 
+    text-decoration: none; font-size: 0.9rem; margin-bottom: 25px; transition: all 0.2s;
+}}
+.bottone-sottile:hover {{ background-color: #ff9100; color: black; }}
+
+/* MESSAGGIO DI ERRORE STILE HACKER */
+.hacker-alert {{
+    background-color: rgba(255, 0, 0, 0.1) !important;
+    border: 1px solid red !important;
+    color: #ff4c4c !important;
+    font-family: 'Special Elite', cursive !important;
+    padding: 10px !important;
+    border-radius: 5px !important;
+    text-align: center !important;
+    margin-bottom: 15px !important;
+}}
+
+/* MENU INFERIORE (BOTTOM NAVIGATION BAR) */
+.bottom-nav {{
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 70px;
+    background-color: rgba(31, 33, 36, 0.95);
+    backdrop-filter: blur(5px);
+    border-top: 2px solid #ff9100;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10000;
+    padding-bottom: env(safe-area-inset-bottom);
+}}
+.nav-item {{
+    text-decoration: none;
+    color: #8a8d93;
+    font-family: 'Special Elite', cursive;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.75rem;
+    flex: 1;
+    text-align: center;
+}}
+.nav-item i {{
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+}}
+.nav-item.active {{
+    color: #ff9100;
+    font-weight: bold;
+}}
+.nav-item:hover {{ color: white; }}
 </style>
-
-<div class="online-counter">
-    <span class="dot-online"></span>
-    <span>{utenti_online} Online</span>
-</div>
-
-<script type="text/javascript">
-var sc_project={SC_PROJECT}; 
-var sc_invisible=1; 
-var sc_security="{SC_SECURITY}"; 
-</script>
-<script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
-<noscript><div class="statcounter"><a title="Web Analytics" href="https://statcounter.com/" target="_blank"><img class="statcounter" src="https://c.statcounter.com/{SC_PROJECT}/0/{SC_SECURITY}/1/" alt="Web Analytics" referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 """, unsafe_allow_html=True)
 
-if os.path.exists("logo_custom.png"):
-    st.image("logo_custom.png", use_container_width=True)
+# --- 5. COMPONENTE NAVIGAZIONE INFERIORE (HTML/JS) ---
+def render_bottom_nav(active_page):
+    home_active = "active" if active_page == "home" else ""
+    mc_active = "active" if active_page == "mc" else ""
+    admin_active = "active" if active_page == "admin" else ""
+    
+    html = f"""
+    <div class="bottom-nav">
+        <a href="?menu=home" class="nav-item {home_active}" target="_self">
+            <i class="fa-solid fa-motorcycle"></i>
+            RADUNI
+        </a>
+        <a href="?menu=mc" class="nav-item {mc_active}" target="_self">
+            <i class="fa-solid fa-skull"></i>
+            LISTA M.C.
+        </a>
+        <a href="?menu=admin" class="nav-item {admin_active}" target="_self">
+            <i class="fa-solid fa-user-shield"></i>
+            SEGNALA
+        </a>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
 
-st.markdown("<h1 class='titolo-gotico'>Iron & Rubber</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sottotitolo'>«Non è la meta, è la strada a rivelare chi sei.»</p>", unsafe_allow_html=True)
+# =====================================================================
+# PAGINA 1: EVENTI E RADUNI (HOME)
+# =====================================================================
+if st.session_state["page"] == "home":
+    st.markdown(f'<div class="online-counter"><span class="dot-online"></span>{utenti_online} Online</div>', unsafe_allow_html=True)
+    st.markdown("<h1 class='titolo-gotico'>IRON & RUBBER</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 class='sottotitolo'>Motoraduni Biker Italia 2026</h2>", unsafe_allow_html=True)
 
-if gc is None:
-    st.error("Errore critico nella connessione a Google Cloud.")
-else:
-    try:
-        foglio_di_calcolo = gc.open(NOME_DEL_FOGLIO)
-        
-        # =========================================================
-        # SCHERMATA 1: HOME (LISTA MOTORADUNI)
-        # =========================================================
-        if st.session_state["page"] == "home":
-            scheda = foglio_di_calcolo.get_worksheet(0)
-            
-            try:
-                scheda_da_verificare = foglio_di_calcolo.worksheet("da verificare")
-            except:
-                scheda_da_verificare = foglio_di_calcolo.add_worksheet(title="da verificare", rows=100, cols=20)
-                scheda_da_verificare.append_row(["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"])
+    if gc:
+        try:
+            scheda = gc.open(NOME_DEL_FOGLIO).sheet1
+            dati = scheda.get_all_records()
+            if dati:
+                df = pd.DataFrame(dati)
+                df.columns = df.columns.str.strip()
+
+                colonne_richieste = ['Data', 'Nome Evento / Raduno', 'Luogo', 'Regione', 'Organizzazione', 'Link', 'Partecipanti']
+                for col in colonne_richieste:
+                    if col not in df.columns:
+                        if col == 'Partecipanti':
+                            df['Partecipanti'] = 0
+                            scheda.update_cell(1, len(df.columns), 'Partecipanti')
+                            for r in range(2, len(df)+2): scheda.update_cell(r, len(df.columns), 0)
+                        else: df[col] = "N.D."
                 
-            colonne_esatte = ["Nome Evento / Raduno", "Data", "Luogo", "Regione", "Dettagli / Note", "Locandina", "Partecipanti"]
-            
-            tutti_i_dati = scheda.get_all_values()
-            if tutti_i_dati and len(tutti_i_dati) > 1:
-                righe_pulite = []
-                for riga in tutti_i_dati[1:]:
-                    riga_7 = (riga + [""] * 7)[:7]
-                    righe_pulite.append(riga_7)
-                df = pd.DataFrame(righe_pulite, columns=colonne_esatte)
-            else:
-                df = pd.DataFrame(columns=colonne_esatte)
-
-            # --- FORM UTENTE ---
-            with st.expander("➕ AGGIUNGI EVENTO"):
-                if st.session_state["evento_inviato"]:
-                    st.markdown("""
-                    <div style='background-color: #1f2124; border: 2px solid #ff9100; padding: 15px; border-radius: 8px; text-align: center; color: white; font-family: "Special Elite", cursive; margin-bottom: 20px;'>
-                        🔥 Grazie per la tua segnalazione!<br>
-                        Il raduno è stato inviato al nostro team e verrà pubblicato non appena verificato.<br><br>
-                        Per modifiche o comunicazioni urgenti puoi scrivere a:<br> 
-                        <strong style='color: #ff9100;'>ironandrubbercustom@gmail.com</strong>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    if st.button("Aggiungi un altro evento"):
-                        st.session_state["evento_inviato"] = False
-                        st.rerun()
-                else:
-                    with st.form("add_form", clear_on_submit=True):
-                        n = st.text_input("Nome Evento")
-                        d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
-                        l = st.text_input("Luogo (Città, Via, ecc.)")
-                        reg_scelta = st.selectbox("Seleziona Regione", regioni_italia, key="add_regione_form")
-                        i = st.text_area("Info")
-                        url_inserito = st.text_input("Link della Locandina (es. da Postimages)")
-                     
-                        if st.form_submit_button("SALVA"):
-                            path_finale = url_inserito.strip()
-                            scheda_da_verificare.append_row([n, d, l, reg_scelta, i, path_finale, 0])
-                            st.session_state["evento_inviato"] = True
-                            st.rerun()
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive; font-size: 1.4rem;'>Prossimi eventi</h3>", unsafe_allow_html=True)
-
-            if not df.empty:
-                df['GSheet_Row'] = df.index + 2
-                df['Data_Date'] = df['Data'].apply(parsing_data_biker)
-                df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
-                
-                # =========================================================
-                # SISTEMA FILTRAGGIO EVENTI SCADUTI
-                # =========================================================
-                oggi = pd.Timestamp.now().normalize()
-                df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
-
-                df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
                 df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
-
-                opzioni_regioni = ["Tutte"] + regioni_italia
-                mesi_ita = {1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile', 5: 'Maggio', 6: 'Giugno', 
-                            7: 'Luglio', 8: 'Agosto', 9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'}
                 
-                df['Mese_Filtro'] = df['Data_Date'].apply(lambda x: f"{mesi_ita[x.month]} {x.year}" if pd.notna(x) else "Da definire")
-                opzioni_mesi = ["Tutte"] + [m for m in list(df['Mese_Filtro'].unique()) if m != "Da definire"]
+                df['Data_Formattata'] = df['Data'].apply(parsing_data_biker)
+                df_valido = df.dropna(subset=['Data_Formattata']).copy()
+                
+                # --- GESTIONE DEI FILTRI ---
+                c1, c2 = st.columns(2)
+                with c1:
+                    regioni_presenti = ['Tutte'] + sorted([r for r in df_valido['Regione'].unique() if pd.notna(r) and r.strip() != "" and r.strip() != "N.D."])
+                    st.session_state["sel_regione"] = st.selectbox("Regione:", regioni_presenti, index=regioni_presenti.index(st.session_state["sel_regione"]) if st.session_state["sel_regione"] in regioni_presenti else 0)
+                
+                with c2:
+                    df_valido['Mese_Anno'] = df_valido['Data_Formattata'].dt.strftime('%B %Y').str.capitalize()
+                    mesi_ordinati = df_valido['Data_Formattata'].dt.to_period('M').sort_values().unique()
+                    mesi_etichette = ['Tutte'] + [p.strftime('%B %Y').capitalize() for p in mesi_ordinati]
+                    st.session_state["sel_mese"] = st.selectbox("Mese:", mesi_etichette, index=mesi_etichette.index(st.session_state["sel_mese"]) if st.session_state["sel_mese"] in mesi_etichette else 0)
 
-                col_regione, col_data = st.columns(2)
-                with col_regione:
-                    regione_scelta = st.selectbox("Regione", opzioni_regioni, key="sel_regione")
-                with col_data:
-                    mese_scelto = st.selectbox("Mese", opzioni_mesi, key="sel_mese")
+                if st.session_state["sel_regione"] != 'Tutte':
+                    df_valido = df_valido[df_valido['Regione'].str.contains(st.session_state["sel_regione"], case=False, na=False)]
+                
+                if st.session_state["sel_mese"] != 'Tutte':
+                    df_valido = df_valido[df_valido['Mese_Anno'] == st.session_state["sel_mese"]]
 
-                ifDoc = df.copy()
-                if regione_scelta != "Tutte":
-                    ifDoc = ifDoc[ifDoc['Regione'].str.strip().str.lower() == regione_scelta.strip().lower()]
-                if mese_scelto != "Tutte":
-                    ifDoc = ifDoc[ifDoc['Mese_Filtro'] == mese_scelto]
+                df_valido = df_valido.sort_values(by='Data_Formattata', ascending=True)
 
-                if not ifDoc.empty:
-                    for idx, row in ifDoc.iterrows():
-                        riga_foglio_google = int(row['GSheet_Row'])
-                        chiave_voto = f"{row['Nome Evento / Raduno']}_{row['Data']}"
+                if not df_valido.empty:
+                    st.markdown("<hr style='border:1px solid #333; margin-top:5px; margin-bottom:20px'>", unsafe_allow_html=True)
+                    
+                    # LOGICA DI CONTROLLO URL PER POPUP IMMAGINE
+                    url_params = st.query_params
+                    
+                    for index, row in df_valido.iterrows():
+                        riga_foglio_google = int(index) + 2
+                        chiave_voto = f"{riga_foglio_google}_{row['Nome Evento / Raduno']}"
                         
-                        img_path = str(row.get('Locandina', '')).strip()
-                        ha_locandina = img_path.startswith("http")
+                        img_path = str(row['Link']).strip()
+                        ha_locandina = img_path.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')) and img_path.startswith('http')
                         
-                        # --- INIZIO EXPANDER DETTAGLI CON TITOLO PULITO ---
-                        with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
-                            stringa_luogo = f"{row['Luogo']} {row['Regione']}"
-                            stringa_safe = urllib.parse.quote_plus(stringa_luogo)
-                            url_maps = f"https://www.google.com/maps/search/?api=1&query={stringa_safe}"
-                            
-                            st.markdown(f"📍 **Luogo:** {row['Luogo']} ({row['Regione']}) <a href='{url_maps}' target='_blank' class='maps-link' title='Apri Navigatore Maps'>🗺️</a>", unsafe_allow_html=True)
-                            st.write(f"📝 **Info:** {row.get('Dettagli / Note', 'Nessuna info')}")
-                            
-                            if ha_locandina:
-                                st.html(f"""
-                                <a href="#zoom_{idx}">
-                                    <img src="{img_path}" class="locandina-cliccabile" alt="Locandina">
-                                </a>
-                                <div class="testo-aiuto-zoom">🔍 Clicca sulla locandina per aprirla a schermo intero</div>
-                                """)
-
-                            pwd = st.text_input(f"Password per modificare {idx}", type="password", key=f"p_{idx}")
-                            if pwd == "Judaz2026":
-                                st.markdown("<div style='color: #00ffcc; font-size: 0.9rem; font-weight: bold;'>⚙️ MODALITÀ MODIFICA ATTIVA</div>", unsafe_allow_html=True)
-                                
-                                new_title = st.text_input(f"Modifica Titolo", value=str(row.get('Nome Evento / Raduno', '')), key=f"title_{idx}")
-                                new_data = st.text_input(f"Modifica Data (Testo)", value=str(row.get('Data', '')), key=f"data_{idx}")
-                                new_luogo = st.text_input(f"Modifica Luogo", value=str(row.get('Luogo', '')), key=f"luogo_{idx}")
-                                
-                                r_attuale = str(row.get('Regione', 'Abruzzo')).strip()
-                                idx_regione = 0
-                                if r_attuale in regioni_italia:
-                                    idx_regione = regioni_italia.index(r_attuale)
-                                new_regione = st.selectbox(f"Modifica Regione", regioni_italia, index=idx_regione, key=f"reg_{idx}")
-                                
-                                new_info = st.text_area(f"Modifica Info / Note", value=str(row.get('Dettagli / Note', '')), key=f"info_{idx}")
-                                new_locandina = st.text_input(f"Modifica Link Locandina", value=img_path, key=f"loc_{idx}")
-                                
-                                if st.button("SALVA MODIFICHE", key=f"save_{idx}"):
-                                    scheda.update_cell(riga_foglio_google, 1, new_title)
-                                    scheda.update_cell(riga_foglio_google, 2, new_data)
-                                    scheda.update_cell(riga_foglio_google, 3, new_luogo)
-                                    scheda.update_cell(riga_foglio_google, 4, new_regione)
-                                    scheda.update_cell(riga_foglio_google, 5, new_info)
-                                    scheda.update_cell(riga_foglio_google, 6, new_locandina.strip())
-                                    st.rerun()
-                                    
-                                if st.button("❌ ELIMINA EVENTO", key=f"delete_{idx}"):
-                                    scheda.delete_rows(riga_foglio_google)
-                                    st.rerun()
-
-                        # --- LIGHTBOX GLOBALE ---
-                        if ha_locandina:
-                            st.html(f"""
-                            <div class="lightbox-target" id="zoom_{idx}">
-                                <img src="{img_path}" alt="Zoom Locandina">
-                                <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
+                        # LOGICA EXPANDER (TITOLO DELL'EVENTO)
+                        titolo_card = f"{row['Nome Evento / Raduno']} ({row['Regione']})"
+                        with st.expander(titolo_card, expanded=False):
+                            st.markdown(f"""
+                            <div class="info-evento">
+                            🗓️ <b>Data:</b> {row['Data']}<br>
+                            📍 <b>Luogo:</b> {row['Luogo']}<br>
+                            🏁 <b>Regione:</b> {row['Regione']}<br>
+                            ☠️ <b>Organizzatore:</b> {row['Organizzazione']}
                             </div>
-                            """)
+                            """, unsafe_allow_html=True)
+                            
+                            st.markdown("<br>", unsafe_allow_html=True)
+
+                            if ha_locandina:
+                                st.markdown(f"""
+                                <a href="?menu=home" id="zoom_{riga_foglio_google}" class="overlay" style="display:none;">
+                                    <span class="close-btn">&times;</span>
+                                    <img src="{img_path}" class="popup-img">
+                                </a>
+                                <style>
+                                    #zoom_{riga_foglio_google}:target {{ display: flex !important; }}
+                                </style>
+                                """, unsafe_allow_html=True)
 
                         # =========================================================
-                        # PULSANTE PARTECIPAZIONE (IN LINEA SE C'E LA LOCANDINA)
+                        # PULSANTE PARTECIPAZIONE E CONDIVISIONE
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
                         
@@ -610,119 +490,151 @@ else:
                             if gia_votato:
                                 html_bottone = f'<div class="html-btn-civado html-btn-disabilitato">CI VADO 🔥 {conteggio}</div>'
                             else:
-                                html_bottone = f'<a href="?vota={idx}" target="_self" class="html-btn-civado">CI VADO 🔥 {conteggio}</a>'
+                                html_bottone = f'<a href="?vota={riga_foglio_google}" target="_self" class="html-btn-civado">CI VADO 🔥 {conteggio}</a>'
                             
-                            st.html(f"""
+                            # --- GENERAZIONE LINK DI CONDIVISIONE WHATSAPP ---
+                            testo_da_inviare = f"🔥 Guarda questo raduno: {row['Nome Evento / Raduno']}!\n📅 Data: {row['Data']}\n📍 Luogo: {row['Luogo']} ({row['Regione']})\n\nScoprilo sull'app Iron & Rubber!"
+                            testo_url_safe = urllib.parse.quote(testo_da_inviare)
+                            link_condivisione = f"https://api.whatsapp.com/send?text={testo_url_safe}"
+                            
+                            st.markdown(f"""
                             <div class="riga-pulsante-anteprima">
                                 {html_bottone}
-                                <a href="#zoom_{idx}">
+                                <a href="#zoom_{riga_foglio_google}" title="Ingrandisci Locandina">
                                     <img src="{img_path}" class="locandina-anteprima-rettangolare" alt="Preview">
                                 </a>
+                                <a href="{link_condivisione}" target="_blank" class="html-btn-condividi" title="Condividi su WhatsApp">
+                                    CONDIVIDI 📲
+                                </a>
                             </div>
-                            """)
+                            """, unsafe_allow_html=True)
                             
-                            if f"vota" in st.query_params and st.query_params["vota"] == str(idx):
+                            if f"vota" in st.query_params and st.query_params["vota"] == str(riga_foglio_google):
                                 if not gia_votato:
                                     scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                                     registra_voto(chiave_voto)
                                     st.query_params.clear()
                                     st.rerun()
+
                         else:
-                            label_btn = f"CI VADO 🔥 {conteggio}"
-                            if ha_gia_votato(chiave_voto):
-                                st.button(label_btn, key=f"btn_{idx}", disabled=True)
+                            gia_votato = ha_gia_votato(chiave_voto)
+                            if gia_votato:
+                                html_bottone = f'<div class="html-btn-civado html-btn-disabilitato">CI VADO 🔥 {conteggio}</div>'
                             else:
-                                if st.button(label_btn, key=f"btn_{idx}"):
+                                html_bottone = f'<a href="?vota_noimg={riga_foglio_google}" target="_self" class="html-btn-civado">CI VADO 🔥 {conteggio}</a>'
+                            
+                            st.markdown(f"""
+                            <div style="margin-bottom:25px;">
+                                {html_bottone}
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            if f"vota_noimg" in st.query_params and st.query_params["vota_noimg"] == str(riga_foglio_google):
+                                if not gia_votato:
                                     scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
                                     registra_voto(chiave_voto)
+                                    st.query_params.clear()
                                     st.rerun()
-                                
-                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-                                    
                 else:
-                    st.info("Nessun evento trovato con i filtri selezionati.")
+                    st.warning("Nessun raduno trovato per questa combinazione.")
             else:
-                st.info("Il database su Google Sheets è vuoto.")
+                st.info("Il database dei raduni è momentaneamente vuoto.")
+        except Exception as e:
+            st.error(f"Errore di lettura dal database: {e}")
+    else:
+         st.error("Errore di connessione a Google Sheets.")
+    
+    render_bottom_nav("home")
 
-        # =========================================================
-        # SCHERMATA 2: PAGINA MOTOCLUB
-        # =========================================================
-        elif st.session_state["page"] == "mc":
-            st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>I MOTO CLUB</h3>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: white; font-family: \"Special Elite\", cursive; font-size:0.9rem;'>«I club che hanno fatto la storia, le nostre origini. Where passion becomes brotherhood.»</p><br>", unsafe_allow_html=True)
+# =====================================================================
+# PAGINA 2: LISTA MOTOCLUB ITALIA (HARDCODED)
+# =====================================================================
+elif st.session_state["page"] == "mc":
+    st.markdown("<h1 class='titolo-gotico'>Motorcycle Club 1% Italia</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:white;'>Lista dei Motorcycle Club che operano sul territorio italiano. Respect. Manca il tuo? Vai in area contatti.</p>", unsafe_allow_html=True)
+    
+    lista_mc = [
+        "Hells Angels MC",
+        "Bandidos MC",
+        "Outlaws MC",
+        "Gremium MC",
+        "Golden Drakes MC",
+        "Born To Be Wild MC"
+    ]
+    
+    for mc in sorted(lista_mc):
+        st.markdown(f"""
+        <div style="background-color:#1f2124; border-left:4px solid #ff9100; padding:10px 15px; margin-bottom:10px; border-radius:4px; color:white; font-family:'Special Elite', cursive; font-size:1.1rem;">
+            ☠️ {mc}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    render_bottom_nav("mc")
+
+# =====================================================================
+# PAGINA 3: SEGNALAZIONE E CONTATTI (FORM)
+# =====================================================================
+elif st.session_state["page"] == "admin":
+    st.markdown("<h1 class='titolo-gotico'>Segnala o Correggi</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color:white; text-align:center;'>Aggiungi un evento, correggi una locandina sbagliata o inserisci il tuo MC. L'aggiornamento è manuale, quindi porta pazienza, fratello.</p>", unsafe_allow_html=True)
+    
+    if st.session_state["evento_inviato"]:
+        st.success("Messaggio ricevuto. Verrà valutato e inserito al più presto. Grazie!")
+        if st.button("Invia un'altra segnalazione"):
+            st.session_state["evento_inviato"] = False
+            st.rerun()
+    else:
+        with st.form("form_segnalazione", clear_on_submit=True):
+            tipo = st.selectbox("Cosa vuoi segnalare?", ["Nuovo Raduno", "Errore in un Raduno", "Aggiunta MC", "Altro"])
+            nome_evento = st.text_input("Nome Evento / Motoclub")
+            data_evento = st.text_input("Data dell'evento (es. 15 Maggio 2026)")
+            luogo = st.text_input("Città e Regione")
+            link_img = st.text_input("Link diretto alla Locandina (JPG/PNG) - Opzionale")
+            note = st.text_area("Messaggio / Dettagli aggiuntivi")
             
-            try:
-                scheda_mc = foglio_di_calcolo.worksheet("motoclub")
-                dati_mc = scheda_mc.get_all_values()
-            except:
-                scheda_mc = foglio_di_calcolo.add_worksheet(title="motoclub", rows=100, cols=10)
-                scheda_mc.append_row(["Nome MotoClub", "Città", "Descrizione / Info", "Logo"])
-                dati_mc = [["Nome MotoClub", "Città", "Descrizione / Info", "Logo"]]
+            submitted = st.form_submit_button("INVIA SEGNALAZIONE")
+            if submitted:
+                if nome_evento.strip() == "":
+                    st.markdown("<div class='hacker-alert'>ERRORE: Inserisci almeno il nome!</div>", unsafe_allow_html=True)
+                else:
+                    if gc:
+                        try:
+                            # TENTA DI SCRIVERE SUL FOGLIO "segnalazioni"
+                            try:
+                                sh = gc.open(NOME_DEL_FOGLIO)
+                                ws = sh.worksheet("segnalazioni")
+                            except:
+                                # Se non esiste, lo crea
+                                ws = gc.open(NOME_DEL_FOGLIO).add_worksheet(title="segnalazioni", rows="100", cols="6")
+                                ws.append_row(["TIPO", "NOME", "DATA", "LUOGO", "LINK", "NOTE"])
+                            
+                            ws.append_row([tipo, nome_evento, data_evento, luogo, link_img, note])
+                            st.session_state["evento_inviato"] = True
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Errore nell'invio: {e}")
+                    else:
+                        st.error("Connessione al database assente. Impossibile inviare.")
 
-            if len(dati_mc) > 1:
-                for row_mc in dati_mc[1:]:
-                    row_mc = (row_mc + [""] * 4)[:4]
-                    nome_mc, citta_mc, info_mc, logo_mc = row_mc
-                    
-                    html_immagine = ""
-                    if logo_mc.strip().startswith("http"):
-                        id_safe = nome_mc.replace(' ', '_').replace("'", "_")
-                        html_immagine = f"""
-                        <div class="logo-container-mc">
-                            <a href="#zoom_mc_{id_safe}">
-                                <img src="{logo_mc.strip()}" class="logo-standard-mc" alt="Logo">
-                            </a>
-                        </div>
-                        <div class="lightbox-target" id="zoom_mc_{id_safe}">
-                            <img src="{logo_mc.strip()}" alt="Zoom Logo Club">
-                            <a class="lightbox-close-btn" href="#_">← TORNA AI CLUB</a>
-                        </div>
-                        """
-                    
-                    st.html(f"""
-                    <div class="card-mc">
-                        <div class="titolo-mc">⚡ {nome_mc}</div>
-                        <div class="citta-mc">📍 Sede: {citta_mc}</div>
-                        <div class="info-mc">{info_mc}</div>
-                        {html_immagine}
-                    </div>
-                    """)
-            else:
-                st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
+    render_bottom_nav("admin")
 
-        # =========================================================
-        # SCHERMATA 3: ADMIN
-        # =========================================================
-        elif st.session_state["page"] == "admin":
-            scheda = foglio_di_calcolo.get_worksheet(0)
-            st.markdown("<h3 style='color: #ff9100; font-family: \"Special Elite\", cursive; text-align: center;'>Pannello Admin</h3>", unsafe_allow_html=True)
-            pass_admin = st.text_input("Inserisci Password Amministratore", type="password", key="password_principale_admin")
-            
-            if pass_admin == "Judaz2026":
-                st.markdown("<div style='color: #00ffcc; font-weight: bold; font-family: \"Special Elite\"; text-align: center;'>🔓 ACCESSO CONCESSO. SEI ONLINE.</div>", unsafe_allow_html=True)
-                with st.form("admin_direct_form", clear_on_submit=True):
-                    adm_n = st.text_input("Nome Evento")
-                    adm_d = st.text_input("Data (es: 15 Luglio 2026)")
-                    adm_l = st.text_input("Luogo (Città)")
-                    adm_reg = st.selectbox("Seleziona Regione", regioni_italia, key="admin_regione_form")
-                    adm_i = st.text_area("Dettagli / Info")
-                    adm_url = st.text_input("Link Locandina")
-                    
-                    if st.form_submit_button("PUBBLICA DIRETTAMENTE ONLINE"):
-                        if adm_n and adm_d:
-                            scheda.append_row([adm_n, adm_d, adm_l, adm_reg, adm_i, adm_url.strip(), 0])
-                            st.success("🔥 Evento pubblicato istantaneamente sul database pubblico!")
-                        else:
-                            st.error("Nome e Data sono obbligatori!")
-
-    except Exception as e:
-        st.error(f"Errore generale: {e}")
-
-# --- 5. MENU FISSO IN BASSO INTERATTIVO ---
-st.markdown("""
-<div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
-    <a href='?menu=home' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
-    <a href='?menu=mc' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>MC</a>
-    <a href='?menu=admin' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>ADMIN</a>
-</div>
-""", unsafe_allow_html=True)
+# --- INTEGRATORE STATCOUNTER JAVASCRIPT CORRETTO ---
+statcounter_js = f"""
+<!-- Statcounter code for App -->
+<script type="text/javascript">
+var sc_project={SC_PROJECT}; 
+var sc_invisible=1; 
+var sc_security="{SC_SECURITY}"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js"
+async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="https://statcounter.com/" target="_blank"><img
+class="statcounter"
+src="https://c.statcounter.com/{SC_PROJECT}/0/{SC_SECURITY}/1/"
+alt="Web Analytics"
+referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
+<!-- End of Statcounter Code -->
+"""
+st.components.v1.html(statcounter_js, height=0)
