@@ -3,7 +3,6 @@ import pandas as pd
 import re
 import gspread
 from google.oauth2 import service_account
-import random
 
 # --- CONFIGURAZIONE ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
