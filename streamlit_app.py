@@ -413,6 +413,18 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 .locandina-anteprima-rettangolare:hover {{
     transform: scale(1.05);
 }}
+
+/* Contenitore esterno per i comandi fuori dall'expander */
+.box-comandi-evento {{
+    background-color: #1f2124;
+    border: 2px solid #ff9100;
+    border-top: none;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    padding: 12px 15px;
+    margin-top: -6px;
+    margin-bottom: 25px;
+}}
 </style>
 
 <div class="online-counter">
@@ -535,6 +547,7 @@ else:
                         img_path = str(row.get('Locandina', '')).strip()
                         ha_locandina = img_path.startswith("http")
                         
+                        # --- 1. L'EXPANDER CONTIENE SOLO I DETTAGLI E LA MODIFICA ---
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
@@ -581,24 +594,24 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                            # --- LIGHTBOX GLOBALE ---
-                            if ha_locandina:
-                                st.html(f"""
-                                <div class="lightbox-target" id="zoom_{idx}">
-                                    <img src="{img_path}" alt="Zoom Locandina">
-                                    <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
-                                </div>
-                                """)
+                        # --- LIGHTBOX GLOBALE ---
+                        if ha_locandina:
+                            st.html(f"""
+                            <div class="lightbox-target" id="zoom_{idx}">
+                                <img src="{img_path}" alt="Zoom Locandina">
+                                <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
+                            </div>
+                            """)
 
-                            # =========================================================
-                            # PULSANTE PARTECIPAZIONE & CONDIVIDI
-                            # =========================================================
-                            conteggio = int(row['Partecipanti'])
-                            
-                            # Testo per la condivisione dell'evento
-                            testo_condivisione = f"🏍️ {row['Nome Evento / Raduno']}\n📅 Data: {row['Data']}\n📍 Luogo: {row['Luogo']} ({row['Regione']})\n🔗 Guarda su Iron & Rubber: {URL_APP}"
-                            url_whatsapp = f"https://api.whatsapp.com/send?text={urllib.parse.quote(testo_condivisione)}"
+                        # =========================================================
+                        # 2. BLOCCO COMANDI FUORI DALL'EXPANDER (SEMPRE VISIBILE)
+                        # =========================================================
+                        conteggio = int(row['Partecipanti'])
+                        testo_condivisione = f"🏍️ {row['Nome Evento / Raduno']}\n📅 Data: {row['Data']}\n📍 Luogo: {row['Luogo']} ({row['Regione']})\n🔗 Guarda su Iron & Rubber: {URL_APP}"
+                        url_whatsapp = f"https://api.whatsapp.com/send?text={urllib.parse.quote(testo_condivisione)}"
 
+                        with st.container():
+                            st.markdown('<div class="box-comandi-evento">', unsafe_allow_html=True)
                             col_btn1, col_btn2 = st.columns([2, 1])
 
                             with col_btn1:
@@ -635,10 +648,9 @@ else:
                                             st.rerun()
 
                             with col_btn2:
-                                # Tasto nativo per condividere l'evento su WhatsApp o altre app
                                 st.link_button("📤 Condividi", url_whatsapp, help="Condividi evento su WhatsApp")
-
-                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+                            
+                            st.markdown('</div>', unsafe_allow_html=True)
                             
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
