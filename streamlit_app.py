@@ -207,22 +207,25 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
     font-weight: bold !important; 
     font-family: 'Special Elite', cursive !important; 
     border-radius: 5px !important; 
-    height: 38px !important; 
+    height: 42px !important; 
     width: 100%;
 }}
 
-label, .stTextInput label, .stTextArea label {{ color: white !important; }}
-
+/* Correzione blocchi orizzontali per evitare tagli su mobile */
 div[data-testid="stHorizontalBlock"] {{
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
     width: 100% !important;
+    align-items: center !important;
+    margin-bottom: 20px !important;
 }}
 div[data-testid="stHorizontalBlock"] > div {{
-    max-width: 100% !important;
-    width: 100% !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
 }}
+
+label, .stTextInput label, .stTextArea label {{ color: white !important; }}
 
 div[data-testid="stSelectbox"] > label {{
     color: #ff9100 !important;
@@ -370,7 +373,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 15px !important;
+    gap: 10px !important;
     width: 100% !important;
     margin-top: 2px !important;
 }}
@@ -381,15 +384,19 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     font-weight: bold !important;
     font-family: 'Special Elite', cursive !important;
     border-radius: 5px !important;
-    height: 38px !important;
-    padding: 0px 20px !important;
-    font-size: 0.9rem !important;
+    height: 42px !important;
+    padding: 0px 10px !important;
+    font-size: 0.85rem !important;
     border: none !important;
     cursor: pointer !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-decoration: none !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex-grow: 1 !important;
 }}
 .html-btn-civado:hover {{
     background-color: #e07f00 !important;
@@ -401,29 +408,17 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 }}
 
 .locandina-anteprima-rettangolare {{
-    height: 45px !important;
+    height: 42px !important;
     width: auto !important;
-    max-width: 90px !important;
+    max-width: 55px !important;
     object-fit: contain !important;
     border: 2px solid #ff9100;
     border-radius: 5px;
     box-shadow: 0px 0px 10px rgba(255, 145, 0, 0.4);
-    transition: transform 0.1s;
+    flex-shrink: 0 !important;
 }}
 .locandina-anteprima-rettangolare:hover {{
     transform: scale(1.05);
-}}
-
-/* Contenitore pulito esterno per i comandi sotto l'expander */
-.box-comandi-evento {{
-    background-color: #1f2124;
-    border: 2px solid #ff9100;
-    border-top: none;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    padding: 10px 15px 15px 15px;
-    margin-top: -6px;
-    margin-bottom: 25px;
 }}
 </style>
 
@@ -604,14 +599,13 @@ else:
                             """)
 
                         # =========================================================
-                        # 2. BLOCCO COMANDI ESTERNO (SUBITO SOTTO L'EXPANDER)
+                        # 2. BLOCCO PULSANTI PERFETTAMENTE RESPONSIVE
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
                         testo_condivisione = f"🏍️ {row['Nome Evento / Raduno']}\n📅 Data: {row['Data']}\n📍 Luogo: {row['Luogo']} ({row['Regione']})\n🔗 Guarda su Iron & Rubber: {URL_APP}"
                         url_whatsapp = f"https://api.whatsapp.com/send?text={urllib.parse.quote(testo_condivisione)}"
 
-                        st.markdown('<div class="box-comandi-evento">', unsafe_allow_html=True)
-                        col_btn1, col_btn2 = st.columns([2, 1])
+                        col_btn1, col_btn2 = st.columns(2)
 
                         with col_btn1:
                             if ha_locandina:
@@ -648,8 +642,6 @@ else:
 
                         with col_btn2:
                             st.link_button("📤 Condividi", url_whatsapp, help="Condividi evento su WhatsApp")
-                        
-                        st.markdown('</div>', unsafe_allow_html=True)
                             
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
