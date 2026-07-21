@@ -211,7 +211,7 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
     width: 100%;
 }}
 
-/* Correzione blocchi orizzontali per evitare tagli su mobile */
+/* Blocco orizzontale flessibile per i pulsanti */
 div[data-testid="stHorizontalBlock"] {{
     display: flex !important;
     flex-direction: row !important;
@@ -407,6 +407,33 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     cursor: not-allowed !important;
 }}
 
+/* Stile unificato per il tasto Condividi (stesso font, altezza e colore del tasto Ci Vado) */
+.html-btn-condividi {{
+    background-color: #ff9100 !important;
+    color: black !important;
+    font-weight: bold !important;
+    font-family: 'Special Elite', cursive !important;
+    border-radius: 5px !important;
+    height: 42px !important;
+    padding: 0px 10px !important;
+    font-size: 0.85rem !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}}
+.html-btn-condividi:hover {{
+    background-color: #e07f00 !important;
+    color: black !important;
+}}
+
 .locandina-anteprima-rettangolare {{
     height: 42px !important;
     width: auto !important;
@@ -433,7 +460,7 @@ var sc_invisible=1;
 var sc_security="{SC_SECURITY}"; 
 </script>
 <script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
-<noscript><div class="statcounter"><a title="Web Analytics" href="https://statcounter.com/" target="_blank"><img class="statcounter" src="https://c.statcounter.com/{SC_PROJECT}/0/{SC_SECURITY}/1/" alt="Web Analytics" referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
+<noscript><div class="statcounter"><a title="Web Analytics" href="https://statcounter.com/" target="_blank"><img class="statcounter" src="https://c.statcounter.com/{SC_PROJECT}/0/{SC_SECURITY}/1/" alt="Web Analytics" referrerpolicy="no-referrer-when-downgrade"></a></div></noscript>
 """, unsafe_allow_html=True)
 
 if os.path.exists("logo_custom.png"):
@@ -641,7 +668,13 @@ else:
                                         st.rerun()
 
                         with col_btn2:
-                            st.link_button("📤 Condividi", url_whatsapp, help="Condividi evento su WhatsApp")
+                            # Icona SVG standard di condivisione (tre palline collegate con linee)
+                            svg_share = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>'
+                            st.html(f"""
+                            <a href="{url_whatsapp}" target="_blank" class="html-btn-condividi">
+                                {svg_share} SHARE
+                            </a>
+                            """)
                             
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
