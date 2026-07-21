@@ -56,6 +56,7 @@ def inizializza_connessione_google():
 
 gc = inizializza_connessione_google()
 NOME_DEL_FOGLIO = "app motoraduni"
+URL_APP = "https://app-motoraduni-6hqxxahyypkhyxmqmpsk2v.streamlit.app/"
 
 # --- LISTA REGIONI STRUTTURATA ---
 regioni_italia = ["Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romagna", 
@@ -63,7 +64,7 @@ regioni_italia = ["Abruzzo", "Basilicata", "Calabria", "Campania", "Emilia-Romag
                   "Piemonte", "Puglia", "Sardegna", "Sicilia", "Toscana", "Trentino-Alto Adige", 
                   "Umbria", "Valle d'Aosta", "Veneto"]
 
-# --- 3. FUNZIONI DATI (SISTEMATE PER UTENTI MULTIPLI) ---
+# --- 3. FUNZIONI DATI ---
 if "voti_locali" not in st.session_state:
     st.session_state["voti_locali"] = set()
 
@@ -77,7 +78,6 @@ def parsing_data_biker(testo_data):
     testo = str(testo_data).lower().strip()
     if not testo or testo == "nan" or testo == "vedi nel sito" or testo == "vedi nel file": return pd.NaT
     
-    # Prova prima il match diretto del formato standard GG/MM/AAAA (es. da motoraduni.it)
     match_standard = re.search(r'\b(\d{2})/(\d{2})/(202\d)\b', testo)
     if match_standard:
         try:
@@ -155,7 +155,6 @@ st.markdown(f"""
     margin-bottom: 4px !important;
 }}
 
-/* TRUCCO CSS: Nascondiamo la freccia predefinita e curiamo l'hover */
 div[data-testid="stExpander"] details summary svg,
 div[data-testid="stExpander"] [data-testid="stExpanderIcon"] {{
     display: none !important;
@@ -188,7 +187,6 @@ div[data-testid="stExpander"] details summary p {{
     margin-bottom: 0px !important;
 }}
 
-/* AGGIUNGE LA SCRITTA "CLICK HERE FOR INFO" SOTTO AL TITOLO */
 div[data-testid="stExpander"] details summary p::after {{
     content: "CLICK HERE FOR INFO";
     display: block;
@@ -198,13 +196,11 @@ div[data-testid="stExpander"] details summary p::after {{
     margin-top: 4px;
     letter-spacing: 1px;
 }}
-/* SE APERTO, CAMBIA IN "CHIUDI INFO" */
 div[data-testid="stExpander"] details[open] summary p::after {{
     content: "CHIUDI INFO";
     color: #8a8d93;
 }}
 
-/* STILE NATIVO DEI PULSANTI (SE USATI DIRETTAMENTE) */
 div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button {{ 
     background-color: #ff9100 !important; 
     color: black !important; 
@@ -217,7 +213,6 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
 
 label, .stTextInput label, .stTextArea label {{ color: white !important; }}
 
-/* IL TUO CSS ORIGINALE PER I FILTRI - RIMANE INTATTO */
 div[data-testid="stHorizontalBlock"] {{
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
@@ -371,7 +366,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     background-color: #e07f00 !important;
 }}
 
-/* CSS PER ALLINEARE BOTTONE "CI VADO" E MINIATURA SULLA STESSA RIGA */
 .riga-pulsante-anteprima {{
     display: flex !important;
     align-items: center !important;
@@ -388,8 +382,8 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     font-family: 'Special Elite', cursive !important;
     border-radius: 5px !important;
     height: 38px !important;
-    padding: 0px 25px !important;
-    font-size: 0.95rem !important;
+    padding: 0px 20px !important;
+    font-size: 0.9rem !important;
     border: none !important;
     cursor: pointer !important;
     display: inline-flex !important;
@@ -508,9 +502,6 @@ else:
                 df['Data_Date'] = df['Data'].apply(parsing_data_biker)
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
-                # =========================================================
-                # SISTEMA FILTRAGGIO EVENTI SCADUTI
-                # =========================================================
                 oggi = pd.Timestamp.now().normalize()
                 df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
 
@@ -544,7 +535,6 @@ else:
                         img_path = str(row.get('Locandina', '')).strip()
                         ha_locandina = img_path.startswith("http")
                         
-                        # --- INIZIO EXPANDER DETTAGLI CON TITOLO PULITO ---
                         with st.expander(f"{row['Data']} - {row['Nome Evento / Raduno']}"):
                             stringa_luogo = f"{row['Luogo']} {row['Regione']}"
                             stringa_safe = urllib.parse.quote_plus(stringa_luogo)
@@ -591,54 +581,65 @@ else:
                                     scheda.delete_rows(riga_foglio_google)
                                     st.rerun()
 
-                        # --- LIGHTBOX GLOBALE ---
-                        if ha_locandina:
-                            st.html(f"""
-                            <div class="lightbox-target" id="zoom_{idx}">
-                                <img src="{img_path}" alt="Zoom Locandina">
-                                <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
-                            </div>
-                            """)
+                            # --- LIGHTBOX GLOBALE ---
+                            if ha_locandina:
+                                st.html(f"""
+                                <div class="lightbox-target" id="zoom_{idx}">
+                                    <img src="{img_path}" alt="Zoom Locandina">
+                                    <a class="lightbox-close-btn" href="#_">← TORNA ALL'EVENTO</a>
+                                </div>
+                                """)
 
-                        # =========================================================
-                        # PULSANTE PARTECIPAZIONE (IN LINEA SE C'E LA LOCANDINA)
-                        # =========================================================
-                        conteggio = int(row['Partecipanti'])
-                        
-                        if ha_locandina:
-                            gia_votato = ha_gia_votato(chiave_voto)
-                            if gia_votato:
-                                html_bottone = f'<div class="html-btn-civado html-btn-disabilitato">CI VADO 🔥 {conteggio}</div>'
-                            else:
-                                html_bottone = f'<a href="?vota={idx}" target="_self" class="html-btn-civado">CI VADO 🔥 {conteggio}</a>'
+                            # =========================================================
+                            # PULSANTE PARTECIPAZIONE & CONDIVIDI
+                            # =========================================================
+                            conteggio = int(row['Partecipanti'])
                             
-                            st.html(f"""
-                            <div class="riga-pulsante-anteprima">
-                                {html_bottone}
-                                <a href="#zoom_{idx}">
-                                    <img src="{img_path}" class="locandina-anteprima-rettangolare" alt="Preview">
-                                </a>
-                            </div>
-                            """)
-                            
-                            if f"vota" in st.query_params and st.query_params["vota"] == str(idx):
-                                if not gia_votato:
-                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                    registra_voto(chiave_voto)
-                                    st.query_params.clear()
-                                    st.rerun()
-                        else:
-                            label_btn = f"CI VADO 🔥 {conteggio}"
-                            if ha_gia_votato(chiave_voto):
-                                st.button(label_btn, key=f"btn_{idx}", disabled=True)
-                            else:
-                                if st.button(label_btn, key=f"btn_{idx}"):
-                                    scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
-                                    registra_voto(chiave_voto)
-                                    st.rerun()
-                                
-                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+                            # Testo per la condivisione dell'evento
+                            testo_condivisione = f"🏍️ {row['Nome Evento / Raduno']}\n📅 Data: {row['Data']}\n📍 Luogo: {row['Luogo']} ({row['Regione']})\n🔗 Guarda su Iron & Rubber: {URL_APP}"
+                            url_whatsapp = f"https://api.whatsapp.com/send?text={urllib.parse.quote(testo_condivisione)}"
+
+                            col_btn1, col_btn2 = st.columns([2, 1])
+
+                            with col_btn1:
+                                if ha_locandina:
+                                    gia_votato = ha_gia_votato(chiave_voto)
+                                    if gia_votato:
+                                        html_bottone = f'<div class="html-btn-civado html-btn-disabilitato">CI VADO 🔥 {conteggio}</div>'
+                                    else:
+                                        html_bottone = f'<a href="?vota={idx}" target="_self" class="html-btn-civado">CI VADO 🔥 {conteggio}</a>'
                                     
+                                    st.html(f"""
+                                    <div class="riga-pulsante-anteprima">
+                                        {html_bottone}
+                                        <a href="#zoom_{idx}">
+                                            <img src="{img_path}" class="locandina-anteprima-rettangolare" alt="Preview">
+                                        </a>
+                                    </div>
+                                    """)
+                                    
+                                    if f"vota" in st.query_params and st.query_params["vota"] == str(idx):
+                                        if not gia_votato:
+                                            scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                            registra_voto(chiave_voto)
+                                            st.query_params.clear()
+                                            st.rerun()
+                                else:
+                                    label_btn = f"CI VADO 🔥 {conteggio}"
+                                    if ha_gia_votato(chiave_voto):
+                                        st.button(label_btn, key=f"btn_{idx}", disabled=True)
+                                    else:
+                                        if st.button(label_btn, key=f"btn_{idx}"):
+                                            scheda.update_cell(riga_foglio_google, 7, int(conteggio + 1))
+                                            registra_voto(chiave_voto)
+                                            st.rerun()
+
+                            with col_btn2:
+                                # Tasto nativo per condividere l'evento su WhatsApp o altre app
+                                st.link_button("📤 Condividi", url_whatsapp, help="Condividi evento su WhatsApp")
+
+                        st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+                            
                 else:
                     st.info("Nessun evento trovato con i filtri selezionati.")
             else:
