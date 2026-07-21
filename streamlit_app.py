@@ -407,7 +407,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     cursor: not-allowed !important;
 }}
 
-/* Tasto Condividi ridotto alla metà dello spazio (50% di larghezza) */
+/* Tasto Condividi ridotto al 40% dello spazio */
 .html-btn-condividi {{
     background-color: #ff9100 !important;
     color: black !important;
@@ -424,7 +424,7 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     justify-content: center !important;
     gap: 8px !important;
     text-decoration: none !important;
-    width: 50% !important;
+    width: 40% !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
