@@ -6,6 +6,7 @@ import gspread
 from google.oauth2 import service_account
 import urllib.parse
 import random
+from datetime import datetime
 
 # --- 1. CONFIGURAZIONE GRAFICA DELLA PAGINA ---
 st.set_page_config(page_title="Iron & Rubber", layout="centered")
@@ -25,7 +26,7 @@ if "page" not in st.session_state:
 # Controllo dei parametri URL per la navigazione dai tasti in basso
 if "menu" in st.query_params:
     scelta_menu = st.query_params["menu"]
-    if scelta_menu in ["home", "mc", "admin"]:
+    if scelta_menu in ["home", "mc", "run", "admin"]:
         st.session_state["page"] = scelta_menu
     st.query_params.clear()
     st.rerun()
@@ -37,6 +38,8 @@ if "sel_mese" not in st.session_state:
     st.session_state["sel_mese"] = "Tutte"
 if "evento_inviato" not in st.session_state:
     st.session_state["evento_inviato"] = False
+if "giro_inviato" not in st.session_state:
+    st.session_state["giro_inviato"] = False
 
 # --- 2. CONNESSI A GOOGLE SHEETS (Secrets) ---
 @st.cache_resource
@@ -447,6 +450,26 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
 .locandina-anteprima-rettangolare:hover {{
     transform: scale(1.05);
 }}
+
+/* Stili specifici per i commenti e mappe della pagina RUN */
+.box-commenti {{ background-color: #1f2124; border: 1px dashed #ff9100; border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 15px; }}
+.singolo-commento {{ border-bottom: 1px solid #333; padding: 6px 0px; font-size: 0.88rem; color: #ddd; }}
+.singolo-commento b {{ color: #ff9100; }}
+.html-btn-mappa {{
+    background-color: #00ffcc !important;
+    color: black !important;
+    font-weight: bold !important;
+    font-family: 'Special Elite', cursive !important;
+    border-radius: 5px !important;
+    height: 42px !important;
+    padding: 0px 15px !important;
+    font-size: 0.85rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    width: 100% !important;
+}}
 </style>
 
 <div class="online-counter">
@@ -668,7 +691,6 @@ else:
                                         st.rerun()
 
                         with col_btn2:
-                            # Icona SVG standard di condivisione (tre palline collegate con linee)
                             svg_share = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>'
                             st.html(f"""
                             <a href="{url_whatsapp}" target="_blank" class="html-btn-condividi">
@@ -728,7 +750,165 @@ else:
                 st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
 
         # =========================================================
-        # SCHERMATA 3: ADMIN
+        # SCHERMATA 3: RUN & ITINERARI (NUOVA PAGINA)
+        # =========================================================
+        elif st.session_state["page"] == "run":
+            st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>RUN & ITINERARI BIKER</h3>", unsafe_allow_html=True)
+            
+            # 2 RIGHE DI ISTRUZIONI RICHIESTE
+            st.markdown("""
+            <div style='text-align: center; color: white; font-family: "Special Elite", cursive; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;'>
+                🗺️ <b>Condividi e scopri i migliori percorsi provati dalla community Biker!</b><br>
+                Inserisci la mappa del tuo giro preferito per consigliarlo agli altri fratelli della strada, vota gli itinerari più belli e lascia un commento.
+            </div>
+            """, unsafe_allow_html=True)
+
+            # --- FORM DI CARICAMENTO NUOVO GIRO ---
+            with st.expander("➕ CARICA UN NUOVO GIRO / MAPPA"):
+                if st.session_state["giro_inviato"]:
+                    st.success("🔥 Giro caricato con successo e visibile alla community!")
+                    if st.button("Invia un altro percorso"):
+                        st.session_state["giro_inviato"] = False
+                        st.rerun()
+                else:
+                    with st.form("form_nuovo_giro", clear_on_submit=True):
+                        titolo_giro = st.text_input("Nome del Giro / Passi", placeholder="es. Anello del Passo dello Stelvio")
+                        autore = st.text_input("Il tuo Nome / Nickname / MC", placeholder="es. Biker84")
+                        regione_giro = st.selectbox("Regione principale:", regioni_italia)
+                        km_totali = st.text_input("Distanza (es. 180 km)", placeholder="180")
+                        stile_strada = st.selectbox("Tipo di percorso:", [
+                            "Piega & Tornanti 🏍️",
+                            "Panoramico / Relax 🌅",
+                            "Off-Road / Enduro 🪵",
+                            "Misto 🛣️"
+                        ])
+                        link_gmaps = st.text_input("Link Mappa Google Maps / Waze*", placeholder="https://maps.google.com/...")
+                        sosta_bar = st.text_input("Sosta Birra/Ristoro Consigliata (Opzionale)")
+                        note_percorso = st.text_area("Note / Consigli di guida")
+
+                        if st.form_submit_button("PUBBLICA RUN 🗺️"):
+                            if not titolo_giro.strip() or not link_gmaps.strip():
+                                st.error("Inserisci almeno il Nome del Giro e il Link della Mappa!")
+                            else:
+                                try:
+                                    try:
+                                        ws_giri = foglio_di_calcolo.worksheet("giri")
+                                    except:
+                                        ws_giri = foglio_di_calcolo.add_worksheet(title="giri", rows=100, cols=10)
+                                        ws_giri.append_row(["TITOLO", "AUTORE", "REGIONE", "KM", "STILE", "LINK_MAPPA", "SOSTA", "NOTE", "VOTI"])
+
+                                    ws_giri.append_row([
+                                        titolo_giro, autore, regione_giro, km_totali, 
+                                        stile_strada, link_gmaps.strip(), sosta_bar, note_percorso, 0
+                                    ])
+                                    st.session_state["giro_inviato"] = True
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Errore nel salvataggio: {e}")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # --- CARICAMENTO E MOSTRA DEGLI ITINERARI ---
+            try:
+                # Caricamento Tabella Commenti
+                df_commenti = pd.DataFrame()
+                try:
+                    ws_comm = foglio_di_calcolo.worksheet("commenti_giri")
+                    d_comm = ws_comm.get_all_values()
+                    if len(d_comm) > 1:
+                        df_commenti = pd.DataFrame(d_comm[1:], columns=d_comm[0])
+                        df_commenti.columns = df_commenti.columns.str.strip()
+                except:
+                    pass
+
+                # Caricamento Tabella Giri
+                ws_giri = foglio_di_calcolo.worksheet("giri")
+                dati_giri = ws_giri.get_all_values()
+
+                if len(dati_giri) > 1:
+                    headers_giri = dati_giri[0]
+                    df_giri = pd.DataFrame(dati_giri[1:], columns=headers_giri)
+                    df_giri.columns = df_giri.columns.str.strip()
+
+                    col_idx_voti = headers_giri.index("VOTI") + 1 if "VOTI" in headers_giri else 9
+
+                    for idx, riga in df_giri.iterrows():
+                        riga_sheet = int(idx) + 2
+                        chiave_giro = f"giro_like_{riga_sheet}_{riga.get('TITOLO','')}"
+                        
+                        titolo_g = riga.get("TITOLO", "Giro Biker")
+                        reg_g = riga.get("REGIONE", "Italia")
+                        km_g = riga.get("KM", "N.D.")
+                        stile_g = riga.get("STILE", "Misto")
+                        link_g = riga.get("LINK_MAPPA", "#")
+                        autore_g = riga.get("AUTORE", "Anonimo")
+                        sosta_g = riga.get("SOSTA", "")
+                        note_g = riga.get("NOTE", "")
+                        voti_g = int(riga.get("VOTI", 0)) if str(riga.get("VOTI", 0)).isdigit() else 0
+
+                        with st.expander(f"🗺️ {titolo_g} ({reg_g})"):
+                            st.markdown(f"""
+                            👤 <b>Creato da:</b> {autore_g}<br>
+                            📏 <b>Distanza:</b> {km_g} KM<br>
+                            🛣️ <b>Stile:</b> {stile_g}<br>
+                            {f'🍻 <b>Sosta Consigliata:</b> {sosta_g}<br>' if sosta_g else ''}
+                            📝 <b>Note:</b> {note_g if note_g else 'Nessun dettaglio aggiuntivo.'}
+                            """, unsafe_allow_html=True)
+                            
+                            st.markdown("<br><b>💬 Commenti della Community:</b>", unsafe_allow_html=True)
+                            
+                            # Filtro commenti per questo giro
+                            commenti_giro = df_commenti[df_commenti["ID_GIRO"] == str(riga_sheet)] if not df_commenti.empty and "ID_GIRO" in df_commenti.columns else pd.DataFrame()
+                            
+                            if not commenti_giro.empty:
+                                html_c = '<div class="box-commenti">'
+                                for _, c_row in commenti_giro.iterrows():
+                                    html_c += f'<div class="singolo-commento"><b>{c_row.get("AUTORE","Anonimo")}</b> ({c_row.get("DATA","")}): {c_row.get("COMMENTO","")}</div>'
+                                html_c += '</div>'
+                                st.markdown(html_c, unsafe_allow_html=True)
+                            else:
+                                st.markdown("<p style='color:#8a8d93; font-size:0.85rem;'>Nessun commento ancora. Scrivine uno tu!</p>", unsafe_allow_html=True)
+
+                            # Form Invia Commento
+                            with st.form(f"form_comm_{riga_sheet}", clear_on_submit=True):
+                                c_autore = st.text_input("Il tuo Nome", key=f"c_aut_{riga_sheet}")
+                                c_testo = st.text_input("Scrivi un commento...", key=f"c_txt_{riga_sheet}")
+                                if st.form_submit_button("INVIA COMMENTO 💬"):
+                                    if c_testo.strip():
+                                        try:
+                                            try:
+                                                ws_comm = foglio_di_calcolo.worksheet("commenti_giri")
+                                            except:
+                                                ws_comm = foglio_di_calcolo.add_worksheet(title="commenti_giri", rows=100, cols=4)
+                                                ws_comm.append_row(["ID_GIRO", "AUTORE", "COMMENTO", "DATA"])
+
+                                            data_oggi = datetime.now().strftime("%d/%m/%Y %H:%M")
+                                            ws_comm.append_row([str(riga_sheet), c_autore if c_autore.strip() else "Anonimo", c_testo, data_oggi])
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"Errore invio commento: {e}")
+
+                        # Pulsanti Aggiuntivi: Apri Mappa & Mi Piace
+                        c_g1, c_g2 = st.columns(2)
+                        with c_g1:
+                            if link_g and link_g != "#":
+                                st.html(f'<a href="{link_g}" target="_blank" class="html-btn-mappa">APRI MAPPA 🗺️</a>')
+                        with c_g2:
+                            label_like = f"MI PIACE 👍 {voti_g}"
+                            if ha_gia_votato(chiave_giro):
+                                st.button(label_like, key=f"like_{riga_sheet}", disabled=True)
+                            else:
+                                if st.button(label_like, key=f"like_{riga_sheet}"):
+                                    ws_giri.update_cell(riga_sheet, col_idx_voti, voti_g + 1)
+                                    registra_voto(chiave_giro)
+                                    st.rerun()
+                else:
+                    st.info("Nessun giro ancora caricato. Sii il primo a pubblicarne uno!")
+            except Exception as e:
+                st.info("La sezione Giri è pronta. Compila il form sopra per inaugurarla!")
+
+        # =========================================================
+        # SCHERMATA 4: ADMIN
         # =========================================================
         elif st.session_state["page"] == "admin":
             scheda = foglio_di_calcolo.get_worksheet(0)
@@ -755,11 +935,12 @@ else:
     except Exception as e:
         st.error(f"Errore generale: {e}")
 
-# --- 5. MENU FISSO IN BASSO INTERATTIVO ---
+# --- 5. MENU FISSO IN BASSO INTERATTIVO (CON BOTTONE RUN) ---
 st.markdown("""
-<div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 30px; padding: 15px 20px; border-top: 3px solid #ff9100; z-index: 9999;'>
-    <a href='?menu=home' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>HOME</a>
-    <a href='?menu=mc' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>MC</a>
-    <a href='?menu=admin' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.2rem;'>ADMIN</a>
+<div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 20px; padding: 15px 15px; border-top: 3px solid #ff9100; z-index: 9999;'>
+    <a href='?menu=home' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>HOME</a>
+    <a href='?menu=mc' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>MC</a>
+    <a href='?menu=run' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>RUN</a>
+    <a href='?menu=admin' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>ADMIN</a>
 </div>
 """, unsafe_allow_html=True)
