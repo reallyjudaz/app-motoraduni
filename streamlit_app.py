@@ -78,34 +78,64 @@ def ha_gia_votato(chiave_evento):
     return str(chiave_evento) in st.session_state["voti_locali"]
 
 def parsing_data_biker(testo_data):
+    """
+    Estrae la DATA DI FINE dell'evento per evitare che un raduno di più giorni
+    venga rimosso prima del suo ultimo giorno.
+    """
     testo = str(testo_data).lower().strip()
-    if not testo or testo == "nan" or testo == "vedi nel sito" or testo == "vedi nel file": return pd.NaT
-    
-    match_standard = re.search(r'\b(\d{2})/(\d{2})/(202\d)\b', testo)
-    if match_standard:
-        try:
-            return pd.Timestamp(year=int(match_standard.group(3)), month=int(match_standard.group(2)), day=int(match_standard.group(1)))
-        except:
-            pass
+    if not testo or testo in ["nan", "vedi nel sito", "vedi nel file", "none"]:
+        return pd.NaT
 
-    mesi = {
-        'gen': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'mag': 5, 'giu': 6, 
-        'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'nov': 11, 'dic': 12
+    mesi_map = {
+        'gennaio': 1, 'gen': 1, 'febbraio': 2, 'feb': 2, 'marzo': 3, 'mar': 3,
+        'aprile': 4, 'apr': 4, 'maggio': 5, 'mag': 5, 'giugno': 6, 'giu': 6,
+        'luglio': 7, 'lug': 7, 'agosto': 8, 'ago': 8, 'settembre': 9, 'set': 9,
+        'ottobre': 10, 'ott': 10, 'novembre': 11, 'nov': 11, 'dicembre': 12, 'dic': 12
     }
-    mese_num = None
-    for k, v in mesi.items():
-        if k in testo:
-            mese_num = v
-            break
-    if not mese_num:
-        try: return pd.to_datetime(testo, dayfirst=True, errors='coerce')
-        except: return pd.NaT
-    anno_match = re.search(r'\b(202\d)\b', testo)
-    anno = int(anno_match.group(1)) if anno_match else 2026
-    giorno_match = re.search(r'\d+', testo)
-    giorno = int(giorno_match.group(0)) if giorno_match else 1
-    try: return pd.Timestamp(year=anno, month=mese_num, day=giorno)
-    except: return pd.NaT
+
+    # 1. Trova l'anno (es. 2026, 2027...)
+    anno_match = re.findall(r'\b(202\d|203\d)\b', testo)
+    anno = int(anno_match[-1]) if anno_match else 2026
+
+    # 2. Cerca pattern di date con cifre (es. 28/29/30/08/2026 o 28/08 - 02/09/2026)
+    matches_ddmm = re.findall(r'(\d{1,2})[/.-](\d{1,2})(?:[/.-](20\d\d))?', testo)
+
+    if matches_ddmm:
+        # Scorre i match al contrario per prendere l'ultima data di fine valida
+        for u_giorno, u_mese, u_anno in reversed(matches_ddmm):
+            g, m = int(u_giorno), int(u_mese)
+            a = int(u_anno) if u_anno else anno
+            if 1 <= g <= 31 and 1 <= m <= 12:
+                try:
+                    return pd.Timestamp(year=a, month=m, day=g)
+                except:
+                    pass
+
+    # 3. Cerca mesi in formato testo (es. "dal 28 al 29 agosto 2027" o "12 - 13 - 14 Giugno 2026")
+    mesi_trovati = []
+    parole = re.findall(r'\b[a-z]+\b', testo)
+    for parola in parole:
+        for k, v in mesi_map.items():
+            if parola == k or (len(parola) >= 3 and parola.startswith(k)):
+                mesi_trovati.append(v)
+                break
+
+    if mesi_trovati:
+        mese_fine = mesi_trovati[-1]  # Prende l'ultimo mese citato (utile per eventi a cavallo di 2 mesi)
+        numeri = [int(n) for n in re.findall(r'\b\d{1,2}\b', testo)]
+        giorni_validi = [n for n in numeri if 1 <= n <= 31 and n != mese_fine]
+        if giorni_validi:
+            giorno_fine = max(giorni_validi)  # Prende il giorno più alto
+            try:
+                return pd.Timestamp(year=anno, month=mese_fine, day=giorno_fine)
+            except:
+                pass
+
+    # Fallback standard
+    try:
+        return pd.to_datetime(testo, dayfirst=True, errors='coerce')
+    except:
+        return pd.NaT
 
 # --- 4. CSS INTEGRATO E COLORI ---
 st.markdown(f"""
@@ -214,7 +244,6 @@ div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button
     width: 100%;
 }}
 
-/* Blocco orizzontale flessibile per i pulsanti */
 div[data-testid="stHorizontalBlock"] {{
     display: flex !important;
     flex-direction: row !important;
@@ -410,7 +439,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     cursor: not-allowed !important;
 }}
 
-/* Tasto Condividi ridotto al 40% dello spazio */
 .html-btn-condividi {{
     background-color: #ff9100 !important;
     color: black !important;
@@ -451,7 +479,6 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"] div {{
     transform: scale(1.05);
 }}
 
-/* Stili specifici per i commenti e mappe della pagina RUN */
 .box-commenti {{ background-color: #1f2124; border: 1px dashed #ff9100; border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 15px; }}
 .singolo-commento {{ border-bottom: 1px solid #333; padding: 6px 0px; font-size: 0.88rem; color: #ddd; }}
 .singolo-commento b {{ color: #ff9100; }}
@@ -539,7 +566,7 @@ else:
                 else:
                     with st.form("add_form", clear_on_submit=True):
                         n = st.text_input("Nome Evento")
-                        d = st.text_input("Data (es: 12 - 13 - 14 Giugno 2026)")
+                        d = st.text_input("Data (es: 28/29/30/08/2026)")
                         l = st.text_input("Luogo (Città, Via, ecc.)")
                         reg_scelta = st.selectbox("Seleziona Regione", regioni_italia, key="add_regione_form")
                         i = st.text_area("Info")
@@ -649,7 +676,7 @@ else:
                             """)
 
                         # =========================================================
-                        # 2. BLOCCO PULSANTI PERFETTAMENTE RESPONSIVE
+                        # 2. BLOCCO PULSANTI RESPONSIVE
                         # =========================================================
                         conteggio = int(row['Partecipanti'])
                         testo_condivisione = f"🏍️ {row['Nome Evento / Raduno']}\n📅 Data: {row['Data']}\n📍 Luogo: {row['Luogo']} ({row['Regione']})\n🔗 Guarda su Iron & Rubber: {URL_APP}"
@@ -750,12 +777,11 @@ else:
                 st.info("Nessun MotoClub registrato al momento. Aggiungili dal tuo file Google Sheets nella scheda 'motoclub'!")
 
         # =========================================================
-        # SCHERMATA 3: RUN & ITINERARI (NUOVA PAGINA)
+        # SCHERMATA 3: RUN & ITINERARI
         # =========================================================
         elif st.session_state["page"] == "run":
             st.markdown("<h3 style='text-align: center; color: #ff9100; font-family: \"Special Elite\", cursive;'>RUN & ITINERARI BIKER</h3>", unsafe_allow_html=True)
             
-            # 2 RIGHE DI ISTRUZIONI RICHIESTE
             st.markdown("""
             <div style='text-align: center; color: white; font-family: "Special Elite", cursive; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;'>
                 🗺️ <b>Condividi e scopri i migliori percorsi provati dalla community Biker!</b><br>
@@ -763,7 +789,6 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-            # --- FORM DI CARICAMENTO NUOVO GIRO ---
             with st.expander("➕ CARICA UN NUOVO GIRO / MAPPA"):
                 if st.session_state["giro_inviato"]:
                     st.success("🔥 Giro caricato con successo e visibile alla community!")
@@ -808,9 +833,7 @@ else:
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # --- CARICAMENTO E MOSTRA DEGLI ITINERARI ---
             try:
-                # Caricamento Tabella Commenti
                 df_commenti = pd.DataFrame()
                 try:
                     ws_comm = foglio_di_calcolo.worksheet("commenti_giri")
@@ -821,7 +844,6 @@ else:
                 except:
                     pass
 
-                # Caricamento Tabella Giri
                 ws_giri = foglio_di_calcolo.worksheet("giri")
                 dati_giri = ws_giri.get_all_values()
 
@@ -857,7 +879,6 @@ else:
                             
                             st.markdown("<br><b>💬 Commenti della Community:</b>", unsafe_allow_html=True)
                             
-                            # Filtro commenti per questo giro
                             commenti_giro = df_commenti[df_commenti["ID_GIRO"] == str(riga_sheet)] if not df_commenti.empty and "ID_GIRO" in df_commenti.columns else pd.DataFrame()
                             
                             if not commenti_giro.empty:
@@ -869,7 +890,6 @@ else:
                             else:
                                 st.markdown("<p style='color:#8a8d93; font-size:0.85rem;'>Nessun commento ancora. Scrivine uno tu!</p>", unsafe_allow_html=True)
 
-                            # Form Invia Commento
                             with st.form(f"form_comm_{riga_sheet}", clear_on_submit=True):
                                 c_autore = st.text_input("Il tuo Nome", key=f"c_aut_{riga_sheet}")
                                 c_testo = st.text_input("Scrivi un commento...", key=f"c_txt_{riga_sheet}")
@@ -888,7 +908,6 @@ else:
                                         except Exception as e:
                                             st.error(f"Errore invio commento: {e}")
 
-                        # Pulsanti Aggiuntivi: Apri Mappa & Mi Piace
                         c_g1, c_g2 = st.columns(2)
                         with c_g1:
                             if link_g and link_g != "#":
@@ -919,7 +938,7 @@ else:
                 st.markdown("<div style='color: #00ffcc; font-weight: bold; font-family: \"Special Elite\"; text-align: center;'>🔓 ACCESSO CONCESSO. SEI ONLINE.</div>", unsafe_allow_html=True)
                 with st.form("admin_direct_form", clear_on_submit=True):
                     adm_n = st.text_input("Nome Evento")
-                    adm_d = st.text_input("Data (es: 15 Luglio 2026)")
+                    adm_d = st.text_input("Data (es: 28/29/30/08/2026)")
                     adm_l = st.text_input("Luogo (Città)")
                     adm_reg = st.selectbox("Seleziona Regione", regioni_italia, key="admin_regione_form")
                     adm_i = st.text_area("Dettagli / Info")
@@ -935,7 +954,7 @@ else:
     except Exception as e:
         st.error(f"Errore generale: {e}")
 
-# --- 5. MENU FISSO IN BASSO INTERATTIVO (CON BOTTONE RUN) ---
+# --- 5. MENU FISSO IN BASSO INTERATTIVO ---
 st.markdown("""
 <div style='position: fixed; bottom: 0; left: 0; width: 100%; background: #1f2124; display: flex; justify-content: flex-start; gap: 20px; padding: 15px 15px; border-top: 3px solid #ff9100; z-index: 9999;'>
     <a href='?menu=home' target='_self' style='font-family: Special Elite; color: #ff9100; font-weight: bold; text-decoration: none; font-size: 1.1rem;'>HOME</a>
