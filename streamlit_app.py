@@ -79,12 +79,12 @@ def ha_gia_votato(chiave_evento):
 
 def parsing_data_biker(testo_data):
     """
-    Estrae la DATA DI FINE dell'evento per evitare che un raduno di più giorni
-    venga rimosso prima del suo ultimo giorno.
+    Estrae sia la DATA DI INIZIO (per l'ordinamento) che la DATA DI FINE (per la scadenza).
+    Ritorna una tupla: (data_inizio, data_fine)
     """
     testo = str(testo_data).lower().strip()
     if not testo or testo in ["nan", "vedi nel sito", "vedi nel file", "none"]:
-        return pd.NaT
+        return pd.NaT, pd.NaT
 
     mesi_map = {
         'gennaio': 1, 'gen': 1, 'febbraio': 2, 'feb': 2, 'marzo': 3, 'mar': 3,
@@ -93,49 +93,70 @@ def parsing_data_biker(testo_data):
         'ottobre': 10, 'ott': 10, 'novembre': 11, 'nov': 11, 'dicembre': 12, 'dic': 12
     }
 
-    # 1. Trova l'anno (es. 2026, 2027...)
     anno_match = re.findall(r'\b(202\d|203\d)\b', testo)
-    anno = int(anno_match[-1]) if anno_match else 2026
+    anno_def = int(anno_match[-1]) if anno_match else 2026
 
-    # 2. Cerca pattern di date con cifre (es. 28/29/30/08/2026 o 28/08 - 02/09/2026)
-    matches_ddmm = re.findall(r'(\d{1,2})[/.-](\d{1,2})(?:[/.-](20\d\d))?', testo)
+    date_trovate = []
 
-    if matches_ddmm:
-        # Scorre i match al contrario per prendere l'ultima data di fine valida
-        for u_giorno, u_mese, u_anno in reversed(matches_ddmm):
-            g, m = int(u_giorno), int(u_mese)
-            a = int(u_anno) if u_anno else anno
-            if 1 <= g <= 31 and 1 <= m <= 12:
+    # 1. Gestione formato multi-giorno tipo "28/29/30/08/2026"
+    match_multiday = re.search(r'((?:\d{1,2}[/.-])+)(\d{1,2})[/.-](20\d\d)', testo)
+    if match_multiday:
+        str_giorni = match_multiday.group(1)
+        m_val = int(match_multiday.group(2))
+        a_val = int(match_multiday.group(3))
+        giorni = [int(x) for x in re.findall(r'\d{1,2}', str_giorni)]
+        for g in giorni:
+            if 1 <= g <= 31 and 1 <= m_val <= 12:
                 try:
-                    return pd.Timestamp(year=a, month=m, day=g)
+                    date_trovate.append(pd.Timestamp(year=a_val, month=m_val, day=g))
                 except:
                     pass
 
-    # 3. Cerca mesi in formato testo (es. "dal 28 al 29 agosto 2027" o "12 - 13 - 14 Giugno 2026")
-    mesi_trovati = []
-    parole = re.findall(r'\b[a-z]+\b', testo)
-    for parola in parole:
-        for k, v in mesi_map.items():
-            if parola == k or (len(parola) >= 3 and parola.startswith(k)):
-                mesi_trovati.append(v)
-                break
+    # 2. Gestione date standard DD/MM/YYYY o DD/MM
+    if not date_trovate:
+        matches_ddmm = re.findall(r'(\d{1,2})[/.-](\d{1,2})(?:[/.-](20\d\d))?', testo)
+        for u_giorno, u_mese, u_anno in matches_ddmm:
+            g, m = int(u_giorno), int(u_mese)
+            a = int(u_anno) if u_anno else anno_def
+            if 1 <= g <= 31 and 1 <= m <= 12:
+                try:
+                    date_trovate.append(pd.Timestamp(year=a, month=m, day=g))
+                except:
+                    pass
 
-    if mesi_trovati:
-        mese_fine = mesi_trovati[-1]  # Prende l'ultimo mese citato (utile per eventi a cavallo di 2 mesi)
-        numeri = [int(n) for n in re.findall(r'\b\d{1,2}\b', testo)]
-        giorni_validi = [n for n in numeri if 1 <= n <= 31 and n != mese_fine]
-        if giorni_validi:
-            giorno_fine = max(giorni_validi)  # Prende il giorno più alto
-            try:
-                return pd.Timestamp(year=anno, month=mese_fine, day=giorno_fine)
-            except:
-                pass
+    # 3. Gestione mesi scritti a testo (es. "dal 28 al 30 agosto 2026")
+    if not date_trovate:
+        mesi_trovati = []
+        parole = re.findall(r'\b[a-z]+\b', testo)
+        for parola in parole:
+            for k, v in mesi_map.items():
+                if parola == k or (len(parola) >= 3 and parola.startswith(k)):
+                    mesi_trovati.append(v)
+                    break
+        if mesi_trovati:
+            m_fine = mesi_trovati[-1]
+            m_inizio = mesi_trovati[0]
+            numeri = [int(n) for n in re.findall(r'\b\d{1,2}\b', testo)]
+            giorni_validi = [n for n in numeri if 1 <= n <= 31 and n not in mesi_trovati]
+            if giorni_validi:
+                try:
+                    date_trovate.append(pd.Timestamp(year=anno_def, month=m_inizio, day=min(giorni_validi)))
+                    date_trovate.append(pd.Timestamp(year=anno_def, month=m_fine, day=max(giorni_validi)))
+                except:
+                    pass
 
     # Fallback standard
-    try:
-        return pd.to_datetime(testo, dayfirst=True, errors='coerce')
-    except:
-        return pd.NaT
+    if not date_trovate:
+        try:
+            dt = pd.to_datetime(testo, dayfirst=True, errors='coerce')
+            if pd.notna(dt):
+                date_trovate.append(dt)
+        except:
+            pass
+
+    if date_trovate:
+        return min(date_trovate), max(date_trovate)
+    return pd.NaT, pd.NaT
 
 # --- 4. CSS INTEGRATO E COLORI ---
 st.markdown(f"""
@@ -583,20 +604,27 @@ else:
 
             if not df.empty:
                 df['GSheet_Row'] = df.index + 2
-                df['Data_Date'] = df['Data'].apply(parsing_data_biker)
+                
+                # Parsing di Data di Inizio e Data di Fine
+                parsed_dates = df['Data'].apply(parsing_data_biker)
+                df['Data_Start'] = [p[0] for p in parsed_dates]
+                df['Data_End'] = [p[1] for p in parsed_dates]
+
                 df['Regione'] = df['Regione'].replace("", "Da definire").fillna("Da definire")
                 
+                # Mantiene visibile finché non passa la DATA DI FINE
                 oggi = pd.Timestamp.now().normalize()
-                df = df[(df['Data_Date'].isna()) | (df['Data_Date'] >= oggi)]
+                df = df[(df['Data_End'].isna()) | (df['Data_End'] >= oggi)]
 
-                df = df.sort_values(by='Data_Date', ascending=True, na_position='last')
+                # Ordina per DATA DI INIZIO (così 28/29/30/08 va al 28 agosto)
+                df = df.sort_values(by='Data_Start', ascending=True, na_position='last')
                 df['Partecipanti'] = pd.to_numeric(df['Partecipanti'], errors='coerce').fillna(0).astype(int)
 
                 opzioni_regioni = ["Tutte"] + regioni_italia
                 mesi_ita = {1: 'Gennaio', 2: 'Febbraio', 3: 'Marzo', 4: 'Aprile', 5: 'Maggio', 6: 'Giugno', 
                             7: 'Luglio', 8: 'Agosto', 9: 'Settembre', 10: 'Ottobre', 11: 'Novembre', 12: 'Dicembre'}
                 
-                df['Mese_Filtro'] = df['Data_Date'].apply(lambda x: f"{mesi_ita[x.month]} {x.year}" if pd.notna(x) else "Da definire")
+                df['Mese_Filtro'] = df['Data_Start'].apply(lambda x: f"{mesi_ita[x.month]} {x.year}" if pd.notna(x) else "Da definire")
                 opzioni_mesi = ["Tutte"] + [m for m in list(df['Mese_Filtro'].unique()) if m != "Da definire"]
 
                 col_regione, col_data = st.columns(2)
